@@ -7,40 +7,80 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 text-gray-800 flex h-screen overflow-hidden">
+<body class="bg-gray-100 text-gray-800 flex flex-col md:flex-row h-screen overflow-hidden">
 
-    <!--Sol Menü -->
-    <aside class="w-64 bg-gray-900 text-white flex flex-col p-4 space-y-2 flex-shrink-0">
-        <h1 class="text-xl font-black text-red-500 text-center mb-4">TÜTEN TOST</h1>
-        <button onclick="switchTab('dashboard')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-chart-pie mr-2"></i> Ön Muhasebe</button>
-        <button onclick="switchTab('orders')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-motorcycle mr-2"></i> Aktif Siparişler</button>
-        <button onclick="switchTab('completed')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-check-double mr-2"></i> Geçmiş Siparişler</button>
-        <button onclick="switchTab('products')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-hamburger mr-2"></i> Ürün & Stok</button>
-        <button onclick="switchTab('whatsapp')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fab fa-whatsapp mr-2"></i> WhatsApp Kutusu</button>
-        <a href="/" class="mt-auto p-3 bg-gray-800 hover:bg-red-600 rounded-xl font-bold text-center block"><i class="fas fa-sign-out-alt mr-2"></i> Siteye Dön</a>
+    <div id="new-order-alert" class="hidden fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-4 animate-bounce border-2 border-white">
+        <div>
+            <strong class="block text-lg"><i class="fas fa-bell"></i> Yeni Sipariş Geldi!</strong>
+            <span class="text-xs opacity-90">Ekranı yenilemek için tıklayın.</span>
+        </div>
+        <button onclick="location.reload()" class="bg-white text-green-600 hover:bg-green-50 font-black px-4 py-2 rounded-lg text-sm transition shadow-sm">Yenile</button>
+    </div>
+
+    <!-- SOL MENÜ -->
+    <aside class="w-full md:w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 z-20 shadow-lg md:shadow-none">
+        <div class="p-4 md:p-6 text-center border-b border-gray-800 hidden md:block">
+            <h1 class="text-xl font-black tracking-wider text-red-500">🔥 TÜTEN TOST</h1>
+            <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Yönetim Paneli</p>
+        </div>
+        
+        <nav class="flex-none md:flex-1 p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-0 md:space-y-2 overflow-x-auto md:overflow-y-auto">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap bg-red-600 text-white font-bold shadow">
+                <i class="fas fa-chart-pie w-5 text-center"></i> <span class="text-sm md:text-base">Genel Durum</span>
+            </button>
+            <button onclick="switchTab('active_orders')" id="nav-active_orders" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800">
+                <i class="fas fa-motorcycle w-5 text-center"></i> <span class="text-sm md:text-base">Aktif Siparişler</span>
+            </button>
+            <button onclick="switchTab('completed_orders')" id="nav-completed_orders" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800">
+                <i class="fas fa-check-double w-5 text-center"></i> <span class="text-sm md:text-base">Geçmiş Siparişler</span>
+            </button>
+            <button onclick="switchTab('whatsapp_inbox')" id="nav-whatsapp_inbox" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800">
+                <i class="fab fa-whatsapp w-5 text-center"></i> <span class="text-sm md:text-base">WhatsApp Kutusu</span>
+            </button>
+            <button onclick="switchTab('chat_logs')" id="nav-chat_logs" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800">
+                <i class="fas fa-comments w-5 text-center"></i> <span class="text-sm md:text-base">Web Bot Sohbetler</span>
+            </button>
+            <button onclick="switchTab('customers')" id="nav-customers" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800">
+                <i class="fas fa-users w-5 text-center"></i> <span class="text-sm md:text-base">Müşteriler</span>
+            </button>
+            <button onclick="switchTab('products')" id="nav-products" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800">
+                <i class="fas fa-hamburger w-5 text-center"></i> <span class="text-sm md:text-base">Ürün Yönetimi</span>
+            </button>
+        </nav>
+
+        <div class="p-2 md:p-4 border-t border-gray-800 flex flex-row md:flex-col gap-2 md:gap-3">
+            <button id="enable-sound-btn" class="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-xs font-bold px-2 py-2 rounded-lg transition shadow flex justify-center items-center gap-1">
+                <i class="fas fa-volume-up"></i> <span>Ses Bildirimi Aç</span>
+            </button>
+            <a href="/" class="flex-1 flex items-center justify-center gap-1 w-full bg-gray-800 hover:bg-red-600 text-white text-[10px] md:text-xs font-bold px-2 py-2 rounded-lg transition">
+                <i class="fas fa-sign-out-alt"></i> Siteye Dön
+            </a>
+        </div>
     </aside>
 
-    <!-- İçerik Alanı -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden">
-        <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
-            <h2 id="page-title" class="text-xl font-black uppercase text-gray-800">Ön Muhasebe & Kasa</h2>
-            <div class="flex items-center gap-4">
-                <button onclick="loadData()" class="bg-red-50 text-red-600 font-bold px-3 py-1.5 rounded-lg text-xs border border-red-200 hover:bg-red-100"><i class="fas fa-sync-alt"></i> Yenile</button>
-                <span id="current-date" class="font-bold text-gray-500 text-sm"></span>
-            </div>
+    <!-- İÇERİK ALANI -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-100">
+        <header class="bg-white shadow-sm px-4 md:px-8 py-4 flex justify-between items-center z-10">
+            <h2 id="page-title" class="text-sm md:text-xl font-black text-gray-800 uppercase truncate">Ön Muhasebe & Dashboard</h2>
+            <div id="current-date" class="text-xs md:text-sm font-bold text-gray-500"></div>
         </header>
-        <div id="content-area" class="flex-1 overflow-y-auto p-8"></div>
+        <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8"></div>
     </main>
 
     <script>
-        document.getElementById('current-date').innerText = new Date().toLocaleDateString('tr-TR');
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('tr-TR') + ' - ' + new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
         let currentTab = 'dashboard';
+        let filterDate = new Date().toISOString().split('T')[0];
+        let lastKnownOrderId = 0;
 
         async function loadData() {
-            const res = await fetch('/api/admin?action=data');
+            const res = await fetch(`/api/admin?action=data&filter_date=${filterDate}`);
             const data = await res.json();
             window.adminData = data;
-            switchTab(currentTab);
+            if (lastKnownOrderId === 0 && data.latest_order_id) {
+                lastKnownOrderId = data.latest_order_id;
+            }
+            renderTab();
         }
 
         async function apiAction(payload) {
@@ -54,46 +94,64 @@
 
         function switchTab(tab) {
             currentTab = tab;
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800";
+            });
+            const activeBtn = document.getElementById('nav-' + tab);
+            if(activeBtn) activeBtn.className = "nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap bg-red-600 text-white font-bold shadow";
+            renderTab();
+        }
+
+        function renderTab() {
             const area = document.getElementById('content-area');
             const title = document.getElementById('page-title');
             const data = window.adminData;
             if (!data) return;
 
-            if (tab === 'dashboard') {
-                title.innerText = "Ön Muhasebe & Kasa";
+            if (currentTab === 'dashboard') {
+                title.innerHTML = '<i class="fas fa-chart-pie text-red-500 mr-2"></i> Ön Muhasebe & Dashboard';
                 area.innerHTML = `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
-                            <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Tahsilat</h3>
-                            <p class="text-2xl font-black text-green-600 mt-2">${data.stats.income} TL</p>
+                    <div class="space-y-6 max-w-[1400px] mx-auto pb-20">
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 flex justify-between items-center flex-wrap gap-4">
+                            <div>
+                                <h3 class="font-black text-gray-800 text-lg"><i class="fas fa-calendar-alt text-indigo-500"></i> Günlük Kasa Özeti</h3>
+                                <p class="text-xs text-gray-500">Seçilen tarih: ${filterDate}</p>
+                            </div>
+                            <input type="date" value="${filterDate}" onchange="filterDate=this.value; loadData();" class="border border-gray-300 px-4 py-2 rounded-xl text-sm font-bold bg-gray-50 cursor-pointer">
                         </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
-                            <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Masraf</h3>
-                            <p class="text-2xl font-black text-red-600 mt-2">${data.stats.expense} TL</p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+                                <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Tahsilat</h3>
+                                <p class="text-2xl font-black text-green-600 mt-2">${data.stats.income} TL</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                                <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Masraf</h3>
+                                <p class="text-2xl font-black text-red-600 mt-2">${data.stats.expense} TL</p>
+                            </div>
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                                <h3 class="text-gray-500 font-bold text-xs uppercase">Net Kasa</h3>
+                                <p class="text-2xl font-black text-blue-600 mt-2">${data.stats.net} TL</p>
+                            </div>
                         </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
-                            <h3 class="text-gray-500 font-bold text-xs uppercase">Net Kasa</h3>
-                            <p class="text-2xl font-black text-blue-600 mt-2">${data.stats.net} TL</p>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-xl">
-                        <h3 class="font-black text-sm uppercase mb-4 text-gray-700">Masraf / Malzeme Ekle</h3>
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <input id="exp_vendor" placeholder="Tedarikçi / Cari" class="border p-2.5 rounded-xl text-sm">
-                            <input id="exp_desc" placeholder="Açıklama" class="border p-2.5 rounded-xl text-sm">
-                        </div>
-                        <div class="flex gap-3">
-                            <input id="exp_amount" type="number" placeholder="Tutar (TL)" class="border p-2.5 rounded-xl text-sm flex-1">
-                            <button onclick="addExpense()" class="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Kaydet</button>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-xl">
+                            <h3 class="font-black text-sm uppercase mb-4 text-gray-700">Masraf / Malzeme Ekle</h3>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <input id="exp_vendor" placeholder="Tedarikçi / Cari" class="border p-2.5 rounded-xl text-sm">
+                                <input id="exp_desc" placeholder="Açıklama" class="border p-2.5 rounded-xl text-sm">
+                            </div>
+                            <div class="flex gap-3">
+                                <input id="exp_amount" type="number" placeholder="Tutar (TL)" class="border p-2.5 rounded-xl text-sm flex-1">
+                                <button onclick="addExpense()" class="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Kaydet</button>
+                            </div>
                         </div>
                     </div>`;
-            } else if (tab === 'orders') {
-                title.innerText = "Aktif Siparişler";
+            } else if (currentTab === 'active_orders') {
+                title.innerHTML = '<i class="fas fa-motorcycle text-amber-500 mr-2"></i> Bekleyen & Yoldaki Siparişler';
                 if (data.activeOrders.length === 0) {
-                    area.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-gray-500 font-bold">Bekleyen aktif sipariş bulunmuyor.</div>`;
+                    area.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-gray-500 font-bold shadow-sm">Bekleyen aktif sipariş bulunmuyor.</div>`;
                     return;
                 }
-                area.innerHTML = `<div class="space-y-4">` + data.activeOrders.map(o => `
+                area.innerHTML = `<div class="space-y-4 max-w-[1400px] mx-auto pb-20">` + data.activeOrders.map(o => `
                     <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <span class="bg-gray-900 text-white font-black px-2 py-1 rounded text-xs">#${o.id}</span>
@@ -105,7 +163,7 @@
                         <div class="flex flex-col items-end gap-2">
                             <span class="text-lg font-black text-red-600">${o.total_price} TL (${o.payment_method || 'Nakit'})</span>
                             <div class="flex gap-2">
-                                <button onclick="apiAction({action:'toggle_payment', order_id:${o.id}, is_paid:${o.is_paid ? 0 : 1}})" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">${o.is_paid ? 'Ödemeyi Geri Al' : 'Tahsil Et'}</button>
+                                <button onclick="apiAction({action:'toggle_payment', order_id:${o.id}, is_paid:${o.is_paid ? 0 : 1}})" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">${o.is_paid ? 'Ödemeyi Geri Al' : 'Tahsil Et'}</button>
                                 <select onchange="apiAction({action:'update_status', order_id:${o.id}, status:this.value})" class="border p-1.5 rounded-lg text-xs font-bold bg-gray-50">
                                     <option value="Hazırlanıyor" ${o.status === 'Hazırlanıyor' ? 'selected' : ''}>Hazırlanıyor</option>
                                     <option value="Yolda" ${o.status === 'Yolda' ? 'selected' : ''}>Yolda</option>
@@ -115,9 +173,9 @@
                             </div>
                         </div>
                     </div>`).join('') + `</div>`;
-            } else if (tab === 'completed') {
-                title.innerText = "Geçmiş Siparişler";
-                area.innerHTML = `<div class="space-y-3">` + (data.completedOrders || []).map(o => `
+            } else if (currentTab === 'completed_orders') {
+                title.innerHTML = '<i class="fas fa-check-double text-green-500 mr-2"></i> Tamamlanan Siparişler';
+                area.innerHTML = `<div class="space-y-3 max-w-[1400px] mx-auto pb-20">` + (data.completedOrders || []).map(o => `
                     <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
                         <div>
                             <span class="font-black text-xs text-gray-500">#${o.id}</span>
@@ -129,23 +187,28 @@
                             <span class="text-xs font-bold px-2 py-0.5 rounded ${o.status === 'Teslim Edildi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.status}</span>
                         </div>
                     </div>`).join('') + `</div>`;
-            } else if (tab === 'whatsapp') {
-                title.innerText = "WhatsApp Gelen Kutusu";
+            } else if (currentTab === 'whatsapp_inbox') {
+                title.innerHTML = '<i class="fab fa-whatsapp text-green-500 mr-2"></i> WhatsApp Gelen Kutusu';
                 area.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-sm"><p class="text-sm text-gray-600 font-bold">Toplam Kayıtlı Mesaj: ${data.waMessages.length}</p></div>`;
-            } else if (tab === 'products') {
-                title.innerText = "Ürün ve Stok Yönetimi";
-                area.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">` + data.products.map(p => `
+            } else if (currentTab === 'chat_logs') {
+                title.innerHTML = '<i class="fas fa-robot text-pink-500 mr-2"></i> Web Asistan Kayıtları';
+                area.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[1400px] mx-auto pb-20">` + (data.chatLogs || []).map(log => `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2">
+                        <span class="text-xs font-bold text-gray-400">Seans: ${log.session_id}</span>
+                        <p class="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">${log.chat_data || ''}</p>
+                    </div>`).join('') + `</div>`;
+            } else if (currentTab === 'customers') {
+                title.innerHTML = '<i class="fas fa-users text-blue-500 mr-2"></i> Müşteriler';
+                area.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border overflow-hidden max-w-[1400px] mx-auto pb-20"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 text-xs uppercase"><tr><th class="p-3">Telefon</th><th class="p-3">Kayıt Tarihi</th><th class="p-3 text-center">İşlem</th></tr></thead><tbody>` + (data.customers || []).map(c => `
+                    <tr class="border-b"><td class="p-3 font-bold">${c.phone}</td><td class="p-3 text-xs text-gray-500">${c.created_at}</td><td class="p-3 text-center"><button onclick="apiAction({action:'delete_customer', customer_id:${c.id}})" class="text-red-500 font-bold text-xs">Sil</button></td></tr>`).join('') + `</tbody></table></div>`;
+            } else if (currentTab === 'products') {
+                title.innerHTML = '<i class="fas fa-hamburger text-purple-500 mr-2"></i> Ürün & Stok Yönetimi';
+                area.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[1400px] mx-auto pb-20">` + data.products.map(p => `
                     <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-2">
                         <input id="pname_${p.id}" value="${p.name}" class="w-full border p-2 rounded-lg font-bold text-sm">
                         <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400">Fiyat (TL)</label>
-                                <input id="pprice_${p.id}" type="number" value="${p.price}" class="w-full border p-2 rounded-lg font-black text-red-600 text-sm">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400">Stok</label>
-                                <input id="pstock_${p.id}" type="number" value="${p.stock}" class="w-full border p-2 rounded-lg font-black text-blue-600 text-sm">
-                            </div>
+                            <div><label class="text-[10px] text-gray-400">Fiyat</label><input id="pprice_${p.id}" type="number" value="${p.price}" class="w-full border p-2 rounded-lg text-sm font-bold text-red-600"></div>
+                            <div><label class="text-[10px] text-gray-400">Stok</label><input id="pstock_${p.id}" type="number" value="${p.stock}" class="w-full border p-2 rounded-lg text-sm font-bold text-blue-600"></div>
                         </div>
                         <button onclick="saveProduct(${p.id}, '${p.bread_type || 'Standart'}')" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg text-xs">Güncelle</button>
                     </div>`).join('') + `</div>`;
@@ -166,6 +229,31 @@
             const stock = parseInt(document.getElementById('pstock_' + id).value || 0, 10);
             apiAction({ action: 'save_product', id, name, price, stock, bread_type });
         }
+
+        const notificationSound = new Audio('/zil.mp3');
+        notificationSound.loop = true;
+        let soundEnabled = false;
+
+        document.getElementById('enable-sound-btn').addEventListener('click', function() {
+            soundEnabled = true;
+            notificationSound.play().then(() => {
+                notificationSound.pause();
+                notificationSound.currentTime = 0;
+            }).catch(e => {});
+            this.innerHTML = '<i class="fas fa-check-circle"></i> <span>Ses Aktif</span>';
+            this.className = "flex-1 flex items-center justify-center gap-1 w-full bg-green-600 text-white text-[10px] md:text-xs font-bold px-2 py-2 rounded-lg transition";
+        });
+
+        setInterval(() => {
+            fetch(`/api/admin?action=check_new&last_id=${lastKnownOrderId}`)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.new_orders > 0) {
+                        if (soundEnabled) notificationSound.play().catch(e => {});
+                        document.getElementById('new-order-alert').classList.remove('hidden');
+                    }
+                });
+        }, 10000);
 
         loadData();
     </script>
