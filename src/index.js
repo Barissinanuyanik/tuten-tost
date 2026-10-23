@@ -110,44 +110,52 @@ export default {
           return jsonResponse({ success: true, order_id: orderId, subtotal });
         }
 
-        // 3. YÖNETİM PANELİ API (/api/admin)
+        // 3. YÖNETİCİ PANELİ API (/api/admin)
         if (path === "/api/admin") {
+          const filterDate = url.searchParams.get("filter_date") || new Date().toISOString().split("T")[0];
+          
           if (!env.DB) {
-            return jsonResponse({
-              stats: { income: 0, expense: 0, net: 0 },
-              activeOrders: [],
-              completedOrders: [],
-              expenses: [],
-              customers: [],
-              waMessages: [],
-              chatLogs: [],
-              products: DEFAULT_PRODUCTS
-            });
+            return jsonResponse({ stats: { income: 0, expense: 0, net: 0 }, activeOrders: [], completedOrders: [], expenses: [], customers: [], waMessages: [], chatLogs: [], products: DEFAULT_PRODUCTS });
           }
 
           if (request.method === "GET") {
-            const incomeObj = await env.DB.prepare("SELECT SUM(total_price) as total FROM orders WHERE is_paid = 1 AND status != 'İptal Edildi'").first();
-            const expenseObj = await env.DB.prepare("SELECT SUM(amount) as total FROM expenses WHERE is_paid = 1").first();
+            const action = url.searchParams.get("action");
+            
+            if (action === "check_new") {
+              const lastId = parseInt(url.searchParams.get("last_id") || "0", 10);
+              const newOrdersObj = await env.DB.prepare("SELECT COUNT(*) as cnt FROM orders WHERE id > ?").bind(lastId).first();
+              return jsonResponse({ new_orders: newOrdersObj?.cnt || 0 });
+            }
+
+            const incomeObj = await env.DB.prepare("SELECT SUM(total_price) as total FROM orders WHERE is_paid = 1 AND status != 'İptal Edildi' AND DATE(created_at) = ?").bind(filterDate).first();
+            const expenseObj = await env.DB.prepare("SELECT SUM(amount) as total FROM expenses WHERE is_paid = 1 AND DATE(created_at) = ?").bind(filterDate).first();
             const income = incomeObj?.total || 0;
             const expense = expenseObj?.total || 0;
 
             const { results: activeOrders } = await env.DB.prepare("SELECT * FROM orders WHERE status NOT IN ('Teslim Edildi', 'İptal Edildi') ORDER BY id DESC").all();
-            const { results: completedOrders } = await env.DB.prepare("SELECT * FROM orders WHERE status IN ('Teslim Edildi', 'İptal Edildi') ORDER BY id DESC LIMIT 50").all();
-            const { results: expenses } = await env.DB.prepare("SELECT * FROM expenses ORDER BY id DESC LIMIT 50").all();
-            const { results: customers } = await env.DB.prepare("SELECT * FROM customers ORDER BY id DESC LIMIT 100").all();
+            const { results: completedOrders } = await env.DB.prepare("SELECT * FROM orders WHERE status IN ('Teslim Edildi', 'İptal Edildi') AND DATE(created_at) = ? ORDER BY id DESC").bind(filterDate).all();
+            const { results: expenses } = await env.DB.prepare("SELECT * FROM expenses WHERE DATE(created_at) = ? ORDER BY id DESC").bind(filterDate).all();
+            const { results: customers } = await env.DB.prepare("SELECT * FROM customers ORDER BY id DESC").all();
             const { results: waMessages } = await env.DB.prepare("SELECT * FROM whatsapp_messages ORDER BY id DESC LIMIT 100").all();
-            const { results: chatLogs } = await env.DB.prepare("SELECT * FROM global_chat_logs ORDER BY last_updated DESC LIMIT 50").all();
+            const { results: chatLogs } = await env.DB.prepare("SELECT * FROM global_chat_logs ORDER BY last_updated DESC LIMIT 100").all();
             const { results: products } = await env.DB.prepare("SELECT * FROM products ORDER BY id DESC").all();
+            const latestOrder = await env.DB.prepare("SELECT id FROM orders ORDER BY id DESC LIMIT 1").first();
+
+            const unpaidOrdersGrouped = await env.DB.prepare("SELECT customer_name, SUM(total_price) as total_debt, COUNT(id) as item_count FROM orders WHERE is_paid = 0 AND status != 'İptal Edildi' GROUP BY customer_name ORDER BY customer_name ASC").all();
+            const unpaidExpensesGrouped = await env.DB.prepare("SELECT vendor_name, SUM(amount) as total_debt, COUNT(id) as item_count FROM expenses WHERE is_paid = 0 GROUP BY vendor_name ORDER BY vendor_name ASC").all();
 
             return jsonResponse({
               stats: { income, expense, net: income - expense },
+              latest_order_id: latestOrder?.id || 0,
               activeOrders,
               completedOrders,
               expenses,
               customers,
               waMessages,
               chatLogs,
-              products
+              products,
+              unpaidOrdersGrouped: unpaidOrdersGrouped.results,
+              unpaidExpensesGrouped: unpaidExpensesGrouped.results
             });
           }
 
@@ -155,51 +163,37 @@ export default {
             const body = await request.json();
             const act = body.action;
 
-            if (act === "login") {
-              const adminUser = env.ADMIN_USER || "admin";
-              const adminPass = env.ADMIN_PASS || "tuten1453";
-              if (body.username === adminUser && body.password === adminPass) {
-                return jsonResponse({ success: true });
-              }
-              return jsonResponse({ success: false, message: "Kullanıcı adı veya şifre hatalı!" });
-            }
-
             if (act === "update_status") {
-              await env.DB.prepare("UPDATE orders SET status = ? WHERE id = ?").bind(body.status, body.order_id).run();
+              await env.DB.prepare("UPDATE orders SET status = ?, cancel_reason = ? WHERE id = ?").bind(body.status, body.cancel_reason || null, body.order_id).run();
               return jsonResponse({ success: true });
             }
-
             if (act === "toggle_payment") {
               await env.DB.prepare("UPDATE orders SET is_paid = ? WHERE id = ?").bind(body.is_paid ? 1 : 0, body.order_id).run();
               return jsonResponse({ success: true });
             }
-
             if (act === "add_expense") {
-              await env.DB.prepare("INSERT INTO expenses (vendor_name, description, quantity, amount, is_paid) VALUES (?, ?, ?, ?, ?)")
-                .bind(body.vendor_name, body.description, body.quantity || 1, body.amount, body.is_paid ? 1 : 0).run();
+              await env.DB.prepare("INSERT INTO expenses (vendor_name, description, quantity, amount, is_paid, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+                .bind(body.vendor_name, body.description, body.quantity || 1, body.amount, body.is_paid ? 1 : 0, filterDate + ' ' + new Date().toTimeString().split(' ')[0]).run();
               return jsonResponse({ success: true });
             }
-
+            if (act === "delete_expense") {
+              await env.DB.prepare("DELETE FROM expenses WHERE id = ?").bind(body.expense_id).run();
+              return jsonResponse({ success: true });
+            }
+            if (act === "delete_customer") {
+              await env.DB.prepare("DELETE FROM customers WHERE id = ?").bind(body.customer_id).run();
+              return jsonResponse({ success: true });
+            }
             if (act === "save_product") {
               if (body.id) {
                 await env.DB.prepare("UPDATE products SET name = ?, price = ?, stock = ?, bread_type = ? WHERE id = ?")
                   .bind(body.name, body.price, body.stock, body.bread_type || "Standart", body.id).run();
-              } else {
-                await env.DB.prepare("INSERT INTO products (name, description, price, img, stock, bread_type) VALUES (?, ?, ?, ?, ?, ?)")
-                  .bind(body.name, body.description || "", body.price, body.img || "img/kasarlitam.webp", body.stock || 100, body.bread_type || "Standart").run();
               }
               return jsonResponse({ success: true });
             }
-
-            if (act === "delete_product") {
-              await env.DB.prepare("DELETE FROM products WHERE id = ?").bind(body.id).run();
-              return jsonResponse({ success: true });
-            }
-
-            return jsonResponse({ success: false, message: "Geçersiz işlem" });
+            return jsonResponse({ success: false });
           }
         }
-
         // 4. YAPAY ZEKA ASİSTAN API (/api/bot)
         if (path === "/api/bot" && request.method === "POST") {
           const data = await request.json();
