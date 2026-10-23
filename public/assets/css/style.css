@@ -1,0 +1,21 @@
+.fire-text {
+    color: #fff;
+    text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 -5px 10px rgba(255,200,0,0.8), 0 -10px 20px rgba(255,100,0,0.9), 0 -15px 30px rgba(255,0,0,0.7);
+    animation: flicker 1.5s infinite alternate;
+}
+@keyframes flicker {
+    0%, 100% { text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 -5px 10px rgba(255,200,0,0.8), 0 -10px 20px rgba(255,100,0,0.9), 0 -15px 30px rgba(255,0,0,0.7); }
+    50% { text-shadow: 0 0 8px rgba(255,255,255,0.9), 0 -8px 15px rgba(255,220,0,0.9), 0 -15px 25px rgba(255,120,0,1), 0 -20px 40px rgba(255,0,0,0.8); }
+}
+.smoke-bg-container { position: relative; overflow: hidden; }
+.smoke-layer {
+    position: absolute; bottom: -50px; left: 0; width: 100%; height: 150%;
+    background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 90%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(255,255,255,0.12) 0%, transparent 60%);
+    filter: blur(15px); animation: smoke-rise 8s infinite ease-in-out alternate; pointer-events: none; z-index: 1;
+}
+.smoke-bg-container > *:not(.smoke-layer) { position: relative; z-index: 10; }
+@keyframes smoke-rise { 0% { transform: translateY(0) scale(1); opacity: 0.5; } 100% { transform: translateY(-40px) scale(1.1); opacity: 0.9; } }
+#chat-messages::-webkit-scrollbar { width: 6px; }
+#chat-messages::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 10px; }

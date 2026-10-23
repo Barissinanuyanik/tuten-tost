@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetim Paneli | Tüten Tost</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 flex h-screen overflow-hidden">
+
+    <!--Sol Menü -->
+    <aside class="w-64 bg-gray-900 text-white flex flex-col p-4 space-y-2 flex-shrink-0">
+        <h1 class="text-xl font-black text-red-500 text-center mb-4">TÜTEN TOST</h1>
+        <button onclick="switchTab('dashboard')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-chart-pie mr-2"></i> Ön Muhasebe</button>
+        <button onclick="switchTab('orders')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-motorcycle mr-2"></i> Aktif Siparişler</button>
+        <button onclick="switchTab('completed')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-check-double mr-2"></i> Geçmiş Siparişler</button>
+        <button onclick="switchTab('products')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fas fa-hamburger mr-2"></i> Ürün & Stok</button>
+        <button onclick="switchTab('whatsapp')" class="p-3 hover:bg-gray-800 rounded-xl font-bold text-left"><i class="fab fa-whatsapp mr-2"></i> WhatsApp Kutusu</button>
+        <a href="/" class="mt-auto p-3 bg-gray-800 hover:bg-red-600 rounded-xl font-bold text-center block"><i class="fas fa-sign-out-alt mr-2"></i> Siteye Dön</a>
+    </aside>
+
+    <!-- İçerik Alanı -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
+            <h2 id="page-title" class="text-xl font-black uppercase text-gray-800">Ön Muhasebe & Kasa</h2>
+            <div class="flex items-center gap-4">
+                <button onclick="loadData()" class="bg-red-50 text-red-600 font-bold px-3 py-1.5 rounded-lg text-xs border border-red-200 hover:bg-red-100"><i class="fas fa-sync-alt"></i> Yenile</button>
+                <span id="current-date" class="font-bold text-gray-500 text-sm"></span>
+            </div>
+        </header>
+        <div id="content-area" class="flex-1 overflow-y-auto p-8"></div>
+    </main>
+
+    <script>
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('tr-TR');
+        let currentTab = 'dashboard';
+
+        async function loadData() {
+            const res = await fetch('/api/admin?action=data');
+            const data = await res.json();
+            window.adminData = data;
+            switchTab(currentTab);
+        }
+
+        async function apiAction(payload) {
+            await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await loadData();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const area = document.getElementById('content-area');
+            const title = document.getElementById('page-title');
+            const data = window.adminData;
+            if (!data) return;
+
+            if (tab === 'dashboard') {
+                title.innerText = "Ön Muhasebe & Kasa";
+                area.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
+                            <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Tahsilat</h3>
+                            <p class="text-2xl font-black text-green-600 mt-2">${data.stats.income} TL</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                            <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Masraf</h3>
+                            <p class="text-2xl font-black text-red-600 mt-2">${data.stats.expense} TL</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                            <h3 class="text-gray-500 font-bold text-xs uppercase">Net Kasa</h3>
+                            <p class="text-2xl font-black text-blue-600 mt-2">${data.stats.net} TL</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-xl">
+                        <h3 class="font-black text-sm uppercase mb-4 text-gray-700">Masraf / Malzeme Ekle</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <input id="exp_vendor" placeholder="Tedarikçi / Cari" class="border p-2.5 rounded-xl text-sm">
+                            <input id="exp_desc" placeholder="Açıklama" class="border p-2.5 rounded-xl text-sm">
+                        </div>
+                        <div class="flex gap-3">
+                            <input id="exp_amount" type="number" placeholder="Tutar (TL)" class="border p-2.5 rounded-xl text-sm flex-1">
+                            <button onclick="addExpense()" class="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Kaydet</button>
+                        </div>
+                    </div>`;
+            } else if (tab === 'orders') {
+                title.innerText = "Aktif Siparişler";
+                if (data.activeOrders.length === 0) {
+                    area.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-gray-500 font-bold">Bekleyen aktif sipariş bulunmuyor.</div>`;
+                    return;
+                }
+                area.innerHTML = `<div class="space-y-4">` + data.activeOrders.map(o => `
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <span class="bg-gray-900 text-white font-black px-2 py-1 rounded text-xs">#${o.id}</span>
+                            <span class="text-xs font-bold ml-2 px-2 py-1 rounded ${o.is_paid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${o.is_paid ? 'ÖDENDİ' : 'ÖDENMEDİ'}</span>
+                            <h4 class="font-bold text-gray-900 mt-2">${o.customer_name} (${o.phone})</h4>
+                            <p class="text-xs text-gray-500">${o.address}</p>
+                            ${o.order_note ? `<p class="text-xs text-amber-700 mt-1 font-bold">${o.order_note}</p>` : ''}
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="text-lg font-black text-red-600">${o.total_price} TL (${o.payment_method || 'Nakit'})</span>
+                            <div class="flex gap-2">
+                                <button onclick="apiAction({action:'toggle_payment', order_id:${o.id}, is_paid:${o.is_paid ? 0 : 1}})" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">${o.is_paid ? 'Ödemeyi Geri Al' : 'Tahsil Et'}</button>
+                                <select onchange="apiAction({action:'update_status', order_id:${o.id}, status:this.value})" class="border p-1.5 rounded-lg text-xs font-bold bg-gray-50">
+                                    <option value="Hazırlanıyor" ${o.status === 'Hazırlanıyor' ? 'selected' : ''}>Hazırlanıyor</option>
+                                    <option value="Yolda" ${o.status === 'Yolda' ? 'selected' : ''}>Yolda</option>
+                                    <option value="Teslim Edildi" ${o.status === 'Teslim Edildi' ? 'selected' : ''}>Teslim Edildi</option>
+                                    <option value="İptal Edildi" ${o.status === 'İptal Edildi' ? 'selected' : ''}>İptal Edildi</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>`).join('') + `</div>`;
+            } else if (tab === 'completed') {
+                title.innerText = "Geçmiş Siparişler";
+                area.innerHTML = `<div class="space-y-3">` + (data.completedOrders || []).map(o => `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
+                        <div>
+                            <span class="font-black text-xs text-gray-500">#${o.id}</span>
+                            <h4 class="font-bold text-sm">${o.customer_name} - ${o.phone}</h4>
+                            <p class="text-xs text-gray-400">${o.address}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-black text-red-600 block">${o.total_price} TL</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${o.status === 'Teslim Edildi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.status}</span>
+                        </div>
+                    </div>`).join('') + `</div>`;
+            } else if (tab === 'whatsapp') {
+                title.innerText = "WhatsApp Gelen Kutusu";
+                area.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-sm"><p class="text-sm text-gray-600 font-bold">Toplam Kayıtlı Mesaj: ${data.waMessages.length}</p></div>`;
+            } else if (tab === 'products') {
+                title.innerText = "Ürün ve Stok Yönetimi";
+                area.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-4">` + data.products.map(p => `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-2">
+                        <input id="pname_${p.id}" value="${p.name}" class="w-full border p-2 rounded-lg font-bold text-sm">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400">Fiyat (TL)</label>
+                                <input id="pprice_${p.id}" type="number" value="${p.price}" class="w-full border p-2 rounded-lg font-black text-red-600 text-sm">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400">Stok</label>
+                                <input id="pstock_${p.id}" type="number" value="${p.stock}" class="w-full border p-2 rounded-lg font-black text-blue-600 text-sm">
+                            </div>
+                        </div>
+                        <button onclick="saveProduct(${p.id}, '${p.bread_type || 'Standart'}')" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg text-xs">Güncelle</button>
+                    </div>`).join('') + `</div>`;
+            }
+        }
+
+        function addExpense() {
+            const vendor_name = document.getElementById('exp_vendor').value;
+            const description = document.getElementById('exp_desc').value;
+            const amount = parseFloat(document.getElementById('exp_amount').value || 0);
+            if (!vendor_name || !description || amount <= 0) return alert("Lütfen tüm alanları doldurun.");
+            apiAction({ action: 'add_expense', vendor_name, description, amount, is_paid: 1 });
+        }
+
+        function saveProduct(id, bread_type) {
+            const name = document.getElementById('pname_' + id).value;
+            const price = parseFloat(document.getElementById('pprice_' + id).value || 0);
+            const stock = parseInt(document.getElementById('pstock_' + id).value || 0, 10);
+            apiAction({ action: 'save_product', id, name, price, stock, bread_type });
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

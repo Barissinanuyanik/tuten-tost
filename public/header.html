@@ -1,0 +1,20 @@
+<!-- PWA Uygulama İndirme Bannerı -->
+<div id="pwa-install-banner" class="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:w-[400px] bg-white rounded-2xl shadow-2xl border-2 border-red-600 z-[1000] p-4 flex items-center gap-4 transition-transform duration-500 transform -translate-y-[150%]">
+    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-2xl flex-shrink-0 shadow-inner border border-red-200">🥪</div>
+    <div class="flex-1">
+        <h4 class="font-black text-gray-900 text-sm">Uygulamamızı İndirin!</h4>
+        <p class="text-[11px] text-gray-500 leading-tight mt-0.5">Tek tıkla, çok daha hızlı sipariş vermek için ana ekranınıza ekleyin.</p>
+    </div>
+    <div class="flex flex-col gap-2 flex-shrink-0">
+        <button onclick="installPWA()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition">Yükle</button>
+        <button onclick="closePWABanner()" class="text-gray-400 hover:text-gray-600 text-[10px] font-bold mt-1 text-center">Şimdi Değil</button>
+    </div>
+</div>
+
+<!-- Üst Menü (Header) -->
+<header class="bg-red-600 text-white sticky top-0 z-50 shadow-lg py-3 px-3 md:py-4 md:px-8 flex justify-between items-center gap-2">
+    <a href="/" class="text-lg sm:text-2xl md:text-3xl font-black tracking-wider uppercase italic truncate">Tüten Tost</a>
+    <a href="/#sepet-alani" class="bg-amber-500 hover:bg-amber-400 text-gray-950 px-3 py-2 sm:px-4 rounded-xl font-black transition flex items-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base shadow-md flex-shrink-0">
+        <i class="fas fa-shopping-basket"></i> Sepetim (<span id="cart-count">0</span>)
+    </a>
+</header>

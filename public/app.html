@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Tüten Tost Mobil Uygulama</title>
+    <meta name="theme-color" content="#dc2626">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; }
+    </style>
+</head>
+<body class="bg-stone-100 text-gray-800 font-sans flex flex-col w-full h-full">
+
+    <header class="bg-red-600 text-white p-3 shadow-md flex justify-between items-center z-10 flex-shrink-0 w-full">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-2xl shadow-inner border-2 border-red-400">🥪</div>
+            <div>
+                <h1 class="font-black tracking-wide leading-tight text-lg">Tüten Tost</h1>
+                <span class="text-[11px] text-red-100 font-medium">Sipariş Uygulaması</span>
+            </div>
+        </div>
+        <a href="/" class="text-xs font-bold bg-white text-red-600 px-3 py-1.5 rounded-full shadow-sm">Web Görünümü</a>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-3 flex flex-col bg-stone-100 space-y-4">
+        <div id="app-products" class="grid grid-cols-2 gap-3"></div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
+            <h3 class="font-black text-sm border-b pb-2 mb-3"><i class="fas fa-shopping-basket text-red-600"></i> Sepetiniz (<span id="app-cart-count">0</span>)</h3>
+            <div id="app-cart-items" class="space-y-2 text-xs mb-3"></div>
+            <form id="app-checkout-form" onsubmit="submitAppOrder(event)" class="space-y-2.5 hidden border-t pt-3">
+                <input type="hidden" name="cart_data" id="app_cart_data">
+                <input type="text" name="name" placeholder="Adınız Soyadınız" class="w-full border p-2.5 rounded-xl text-xs font-bold" required>
+                <input type="tel" name="phone" placeholder="Telefon (05...)" class="w-full border p-2.5 rounded-xl text-xs font-bold" required>
+                <textarea name="adr_serbest" placeholder="Samanlı Mah. Sokak, Apartman, Daire no..." class="w-full border p-2.5 rounded-xl text-xs font-bold h-16" required></textarea>
+                <select name="payment_method" class="w-full border p-2.5 rounded-xl text-xs font-bold bg-white">
+                    <option value="Nakit">Kapıda Nakit</option>
+                    <option value="Havale / EFT">Havale / EFT</option>
+                </select>
+                <button type="submit" class="w-full bg-green-600 text-white font-black py-3 rounded-xl text-sm shadow">SİPARİŞİ ONAYLA</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        let appCart = [];
+
+        fetch('/api/products')
+            .then(r => r.json())
+            .then(products => {
+                const box = document.getElementById('app-products');
+                box.innerHTML = products.map(p => `
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border flex flex-col justify-between text-center">
+                        <img src="${p.img}" class="w-full h-24 object-cover rounded-xl mb-2">
+                        <h4 class="font-black text-xs text-gray-800 mb-1">${p.name}</h4>
+                        <span class="text-red-600 font-black text-sm mb-2">${p.price} TL</span>
+                        ${p.stock > 0 ? `<button onclick="quickAdd(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.price})" class="bg-red-600 text-white text-xs font-bold py-2 rounded-xl">+ Sepete Ekle</button>` : `<span class="text-[10px] bg-gray-200 py-1 rounded font-bold">Tükendi</span>`}
+                    </div>
+                `).join('');
+            });
+
+        function quickAdd(id, name, price) {
+            appCart.push({ id, type: 'toast', name, options: ['Acısız', 'Ketçaplı', 'Mayonezli'], unitPrice: price, totalPrice: price, qty: 1 });
+            renderAppCart();
+        }
+
+        function renderAppCart() {
+            document.getElementById('app-cart-count').innerText = appCart.length;
+            const container = document.getElementById('app-cart-items');
+            const form = document.getElementById('app-checkout-form');
+            if (appCart.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-2">Sepetiniz boş.</p>';
+                form.classList.add('hidden');
+                return;
+            }
+            form.classList.remove('hidden');
+            container.innerHTML = appCart.map((item, idx) => `
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg border">
+                    <span class="font-bold">${item.name}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-red-600 font-black">${item.totalPrice} TL</span>
+                        <button onclick="appCart.splice(${idx},1);renderAppCart();" class="text-red-500 font-bold">Sil</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('app_cart_data').value = JSON.stringify(appCart);
+        }
+
+        async function submitAppOrder(e) {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const res = await fetch('/api/orders', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (data.success) {
+                alert('Siparişiniz alındı! Sipariş No: #' + data.order_id);
+                appCart = [];
+                renderAppCart();
+            } else {
+                alert('Hata: ' + (data.message || 'Sipariş verilemedi'));
+            }
+        }
+        renderAppCart();
+    </script>
+</body>
+</html>
