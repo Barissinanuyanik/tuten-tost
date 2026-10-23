@@ -133,21 +133,64 @@
                                 <p class="text-2xl font-black text-blue-600 mt-2">${data.stats.net} TL</p>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-xl">
-                            <h3 class="font-black text-sm uppercase mb-4 text-gray-700">Masraf / Malzeme Ekle</h3>
-                            <div class="grid grid-cols-2 gap-3 mb-3">
-                                <input id="exp_vendor" placeholder="Tedarikçi / Cari" class="border p-2.5 rounded-xl text-sm">
-                                <input id="exp_desc" placeholder="Açıklama" class="border p-2.5 rounded-xl text-sm">
+
+                        <!-- Detaylı Muhasebe ve Cari Kart Alanları -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Masraf / Malzeme Ekle -->
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                                <h3 class="font-black text-sm uppercase mb-4 text-gray-700"><i class="fas fa-box-open text-red-500 mr-1"></i> Masraf / Malzeme Ekle</h3>
+                                <div class="space-y-3">
+                                    <input id="exp_vendor" placeholder="Tedarikçi / Cari" class="border p-2.5 rounded-xl text-sm w-full">
+                                    <input id="exp_desc" placeholder="Açıklama" class="border p-2.5 rounded-xl text-sm w-full">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input id="exp_qty" type="number" value="1" placeholder="Adet" class="border p-2.5 rounded-xl text-sm">
+                                        <input id="exp_amount" type="number" placeholder="Tutar (TL)" class="border p-2.5 rounded-xl text-sm">
+                                    </div>
+                                    <button onclick="addExpense()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition">Masrafı Kaydet</button>
+                                </div>
                             </div>
-                            <div class="flex gap-3">
-                                <input id="exp_amount" type="number" placeholder="Tutar (TL)" class="border p-2.5 rounded-xl text-sm flex-1">
-                                <button onclick="addExpense()" class="bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm">Kaydet</button>
+
+                            <!-- Alacaklar (Müşteri Carileri) -->
+                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col">
+                                <h3 class="text-base font-black mb-3 text-gray-800 flex items-center gap-2"><i class="fas fa-arrow-down text-green-500"></i> Alacaklarımız</h3>
+                                <div class="flex-1 space-y-2 overflow-y-auto max-h-[300px]">
+                                    ${(!data.unpaidOrdersGrouped || data.unpaidOrdersGrouped.length === 0) ? '<p class="text-xs text-gray-500 text-center py-4">Bekleyen alacak bulunmuyor.</p>' : data.unpaidOrdersGrouped.map(uo => `
+                                        <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
+                                            <div>
+                                                <span class="block font-bold text-sm text-gray-900">${uo.customer_name}</span>
+                                                <span class="text-[11px] text-gray-500">${uo.item_count} İşlem</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="block font-black text-green-600">${uo.total_debt} TL</span>
+                                                <button onclick="apiAction({action:'pay_customer_debt', customer_name:'${uo.customer_name}'})" class="mt-1 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">TAHSİL ET</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Borçlar (Tedarikçi Carileri) -->
+                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col">
+                                <h3 class="text-base font-black mb-3 text-gray-800 flex items-center gap-2"><i class="fas fa-arrow-up text-red-500"></i> Borçlarımız</h3>
+                                <div class="flex-1 space-y-2 overflow-y-auto max-h-[300px]">
+                                    ${(!data.unpaidExpensesGrouped || data.unpaidExpensesGrouped.length === 0) ? '<p class="text-xs text-gray-500 text-center py-4">Tedarikçi borcu bulunmuyor.</p>' : data.unpaidExpensesGrouped.map(ue => `
+                                        <div class="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
+                                            <div>
+                                                <span class="block font-bold text-sm text-gray-900">${ue.vendor_name}</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="block font-black text-red-600">${ue.total_debt} TL</span>
+                                                <button onclick="apiAction({action:'pay_vendor_debt', vendor_name:'${ue.vendor_name}'})" class="mt-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">KASADAN ÖDE</button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
                             </div>
                         </div>
                     </div>`;
             } else if (currentTab === 'active_orders') {
                 title.innerHTML = '<i class="fas fa-motorcycle text-amber-500 mr-2"></i> Bekleyen & Yoldaki Siparişler';
-                if (data.activeOrders.length === 0) {
+                if (!data.activeOrders || data.activeOrders.length === 0) {
                     area.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-gray-500 font-bold shadow-sm">Bekleyen aktif sipariş bulunmuyor.</div>`;
                     return;
                 }
@@ -218,9 +261,10 @@
         function addExpense() {
             const vendor_name = document.getElementById('exp_vendor').value;
             const description = document.getElementById('exp_desc').value;
+            const quantity = parseFloat(document.getElementById('exp_qty').value || 1);
             const amount = parseFloat(document.getElementById('exp_amount').value || 0);
             if (!vendor_name || !description || amount <= 0) return alert("Lütfen tüm alanları doldurun.");
-            apiAction({ action: 'add_expense', vendor_name, description, amount, is_paid: 1 });
+            apiAction({ action: 'add_expense', vendor_name, description, quantity, amount, is_paid: 1 });
         }
 
         function saveProduct(id, bread_type) {
