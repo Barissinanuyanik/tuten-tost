@@ -1,0 +1,13 @@
+name = "tuten-tost"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Cloudflare panelinden D1 veritabanı oluşturduğunuzda aşağıdaki 3 satırın başındaki # işaretini kaldırıp database_id değerini yazın:
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "tuten_tost_db"
+# database_id = "BURAYA_D1_DATABASE_ID_GELECEK"
