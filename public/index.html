@@ -219,6 +219,11 @@
 
         async function submitOrder(e) {
             e.preventDefault();
+            
+            // HATA ÇÖZÜMÜ: Sepet verisini FormData'ya aktarmadan hemen önce zorunlu olarak senkronize edelim
+            const currentCart = sessionStorage.getItem('tuten_cart') || '[]';
+            document.getElementById('cart_data_input').value = currentCart;
+
             const form = document.getElementById('checkout-form');
             const formData = new FormData(form);
             const res = await fetch('/api/orders', { method: 'POST', body: formData });
