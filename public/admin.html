@@ -429,34 +429,86 @@
             } else if (currentTab === 'products') {
                 title.innerHTML = '<i class="fas fa-hamburger text-purple-500 mr-2"></i> Ürün & Menü Yönetimi';
                 area.innerHTML = `<div class="max-w-7xl mx-auto space-y-6 pb-20">
+                    
+                    <!-- YENİ ÜRÜN EKLEME FORMU -->
                     <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-purple-500">
                         <h2 class="text-xl font-black mb-4 text-gray-800"><i class="fas fa-plus-circle text-purple-500"></i> Yeni Ürün Ekle</h2>
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                            <div class="md:col-span-3 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Ürün Adı</label><input type="text" id="new_p_name" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"></div>
-                            <div class="md:col-span-2 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Fiyat (TL)</label><input type="number" id="new_p_price" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"></div>
-                            <div class="md:col-span-2 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Ekmek Türü</label><select id="new_p_bread" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"><option value="14x14 cm">14x14 cm Ekmek</option><option value="11x11 cm">11x11 cm Ekmek</option><option value="Sandviç Ekmeği">Sandviç Ekmeği</option><option value="Standart">Standart / İçecek</option></select></div>
-                            <div class="md:col-span-2 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Stok</label><input type="number" id="new_p_stock" value="100" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"></div>
-                            <div class="md:col-span-3 w-full"><button onclick="saveProduct(0)" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow-md">Ürünü Kaydet</button></div>
+                            <div class="md:col-span-3 w-full">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Ürün Adı</label>
+                                <input type="text" id="new_p_name" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
+                            </div>
+                            <div class="md:col-span-2 w-full">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Fiyat (TL)</label>
+                                <input type="number" id="new_p_price" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
+                            </div>
+                            <div class="md:col-span-2 w-full">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Ekmek Türü</label>
+                                <select id="new_p_bread" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
+                                    <option value="14x14 cm">14x14 cm Ekmek</option>
+                                    <option value="11x11 cm">11x11 cm Ekmek</option>
+                                    <option value="Sandviç Ekmeği">Sandviç Ekmeği</option>
+                                    <option value="Standart">Standart / İçecek</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2 w-full">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Stok</label>
+                                <input type="number" id="new_p_stock" value="100" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none">
+                            </div>
+                            <div class="md:col-span-3 w-full">
+                                <button onclick="saveProduct(0)" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow-md">Ürünü Kaydet</button>
+                            </div>
+                            <div class="md:col-span-12 w-full">
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Ürün Açıklaması</label>
+                                <textarea id="new_p_desc" class="w-full border border-gray-300 p-2 rounded-xl text-sm outline-none" rows="2" placeholder="Menüde görünecek ürün içeriği (Örn: %100 Dana Sucuk)"></textarea>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- MEVCUT ÜRÜNLER LİSTESİ -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">` + data.products.map(p => `
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition">
-                            <div class="w-full h-40 bg-gray-100 rounded-xl mb-4 overflow-hidden relative">
-                                <span class="absolute top-2 right-2 ${p.stock<=5?'bg-red-600':'bg-green-600'} text-white text-[10px] font-black px-2 py-1 rounded shadow-md">Stok: ${p.stock}</span>
-                                <img src="${p.img}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="space-y-3">
-                                <div><label class="text-xs font-bold text-gray-500">Ürün Adı:</label><input type="text" id="pname_${p.id}" value="${p.name}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-semibold outline-none"></div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div><label class="text-xs font-bold text-gray-500">Fiyat:</label><input type="number" id="pprice_${p.id}" value="${p.price}" class="w-full border p-2 rounded-lg text-sm font-bold text-red-600 outline-none"></div>
-                                    <div><label class="text-xs font-bold text-gray-500">Stok:</label><input type="number" id="pstock_${p.id}" value="${p.stock}" class="w-full border p-2 rounded-lg text-sm font-bold text-blue-600 outline-none"></div>
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition flex flex-col justify-between">
+                            <div>
+                                <div class="w-full h-40 bg-gray-100 rounded-xl mb-4 overflow-hidden relative">
+                                    <span class="absolute top-2 right-2 ${p.stock<=5?'bg-red-600':'bg-green-600'} text-white text-[10px] font-black px-2 py-1 rounded shadow-md">Stok: ${p.stock}</span>
+                                    <img src="${p.img}" class="w-full h-full object-cover">
                                 </div>
-                                <div class="flex gap-2 pt-2 border-t border-gray-100">
-                                    <button onclick="saveProduct(${p.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg shadow transition">Güncelle</button>
-                                    <button onclick="if(confirm('Silinsin mi?')) apiAction({action:'delete_product', id:${p.id}})" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-lg shadow transition">Sil</button>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500">Ürün Adı:</label>
+                                        <input type="text" id="pname_${p.id}" value="${p.name}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-semibold outline-none focus:ring-1 focus:ring-purple-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500">Ekmek / Kategori:</label>
+                                        <select id="pbread_${p.id}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-semibold outline-none focus:ring-1 focus:ring-purple-500">
+                                            <option value="14x14 cm" ${p.bread_type=='14x14 cm'?'selected':''}>14x14 cm Ekmek</option>
+                                            <option value="11x11 cm" ${p.bread_type=='11x11 cm'?'selected':''}>11x11 cm Ekmek</option>
+                                            <option value="Sandviç Ekmeği" ${p.bread_type=='Sandviç Ekmeği'?'selected':''}>Sandviç Ekmeği</option>
+                                            <option value="Standart" ${p.bread_type=='Standart'?'selected':''}>Standart / İçecek</option>
+                                        </select>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-xs font-bold text-gray-500">Fiyat (TL):</label>
+                                            <input type="number" id="pprice_${p.id}" value="${p.price}" class="w-full border p-2 rounded-lg text-sm font-bold text-red-600 outline-none focus:ring-1 focus:ring-purple-500">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold text-gray-500">Stok:</label>
+                                            <input type="number" id="pstock_${p.id}" value="${p.stock}" class="w-full border p-2 rounded-lg text-sm font-bold text-blue-600 outline-none focus:ring-1 focus:ring-purple-500">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500">Ürün Açıklaması:</label>
+                                        <textarea id="pdesc_${p.id}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-semibold outline-none focus:ring-1 focus:ring-purple-500" rows="2">${p.description || ''}</textarea>
+                                    </div>
                                 </div>
                             </div>
-                        </div>`).join('') + `</div></div>`;
+                            <div class="flex gap-2 pt-4 border-t border-gray-100 mt-4">
+                                <button onclick="saveProduct(${p.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg shadow transition">Güncelle</button>
+                                <button onclick="if(confirm('Silinsin mi?')) apiAction({action:'delete_product', id:${p.id}})" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-lg shadow transition">Sil</button>
+                            </div>
+                        </div>`).join('') + `</div>
+                </div>`;
             }
         }
 
@@ -521,20 +573,23 @@
             }
         }
 
-        // Product Functions
+        // Product Functions (Güncellendi)
         function saveProduct(id) {
             if (id === 0) {
                 const name = document.getElementById('new_p_name').value;
                 const price = parseFloat(document.getElementById('new_p_price').value || 0);
                 const stock = parseInt(document.getElementById('new_p_stock').value || 0, 10);
                 const bread_type = document.getElementById('new_p_bread').value;
+                const description = document.getElementById('new_p_desc').value;
                 if(!name || price<=0) return alert("İsim ve fiyat zorunlu");
-                apiAction({ action: 'save_product', name, price, stock, bread_type });
+                apiAction({ action: 'save_product', name, price, stock, bread_type, description });
             } else {
                 const name = document.getElementById('pname_' + id).value;
                 const price = parseFloat(document.getElementById('pprice_' + id).value || 0);
                 const stock = parseInt(document.getElementById('pstock_' + id).value || 0, 10);
-                apiAction({ action: 'save_product', id, name, price, stock });
+                const description = document.getElementById('pdesc_' + id).value;
+                const bread_type = document.getElementById('pbread_' + id).value;
+                apiAction({ action: 'save_product', id, name, price, stock, bread_type, description });
             }
         }
 
