@@ -40,14 +40,12 @@ export default {
       try {
         if (env.DB) await initDB(env.DB);
 
-        // 1. ÜRÜNLERİ LİSTELE (/api/products)
         if (path === "/api/products" && request.method === "GET") {
           if (!env.DB) return jsonResponse(DEFAULT_PRODUCTS);
           const { results } = await env.DB.prepare("SELECT * FROM products ORDER BY CASE WHEN stock > 0 THEN 0 ELSE 1 END ASC, id ASC").all();
           return jsonResponse(results);
         }
 
-        // 2. SİPARİŞ OLUŞTURMA VE SORGULAMA (/api/orders)
         if (path === "/api/orders" && request.method === "POST") {
           if (!env.DB) return jsonResponse({ success: false, message: "Veritabanı (D1) bağlantısı henüz yapılandırılmadı." });
           const formData = await request.formData();
@@ -110,7 +108,6 @@ export default {
           return jsonResponse({ success: true, order_id: orderId, subtotal });
         }
 
-        // 3. YÖNETİCİ PANELİ API (/api/admin)
         if (path === "/api/admin") {
           const filterDate = url.searchParams.get("filter_date") || new Date().toISOString().split("T")[0];
           
@@ -133,16 +130,31 @@ export default {
             const expense = expenseObj?.total || 0;
 
             const { results: activeOrders } = await env.DB.prepare("SELECT * FROM orders WHERE status NOT IN ('Teslim Edildi', 'İptal Edildi') ORDER BY id DESC").all();
+            
+            // Sipariş item'larını da çekelim
+            for(let o of activeOrders) {
+                const { results: items } = await env.DB.prepare("SELECT * FROM order_items WHERE order_id = ?").bind(o.id).all();
+                o.items = items;
+            }
+
             const { results: completedOrders } = await env.DB.prepare("SELECT * FROM orders WHERE status IN ('Teslim Edildi', 'İptal Edildi') AND DATE(created_at) = ? ORDER BY id DESC").bind(filterDate).all();
+            for(let o of completedOrders) {
+                const { results: items } = await env.DB.prepare("SELECT * FROM order_items WHERE order_id = ?").bind(o.id).all();
+                o.items = items;
+            }
+
             const { results: expenses } = await env.DB.prepare("SELECT * FROM expenses WHERE DATE(created_at) = ? ORDER BY id DESC").bind(filterDate).all();
             const { results: customers } = await env.DB.prepare("SELECT * FROM customers ORDER BY id DESC").all();
-            const { results: waMessages } = await env.DB.prepare("SELECT * FROM whatsapp_messages ORDER BY id DESC LIMIT 100").all();
+            const { results: waMessages } = await env.DB.prepare("SELECT * FROM whatsapp_messages ORDER BY created_at DESC").all();
             const { results: chatLogs } = await env.DB.prepare("SELECT * FROM global_chat_logs ORDER BY last_updated DESC LIMIT 100").all();
             const { results: products } = await env.DB.prepare("SELECT * FROM products ORDER BY id DESC").all();
             const latestOrder = await env.DB.prepare("SELECT id FROM orders ORDER BY id DESC LIMIT 1").first();
 
             const unpaidOrdersGrouped = await env.DB.prepare("SELECT customer_name, SUM(total_price) as total_debt, COUNT(id) as item_count FROM orders WHERE is_paid = 0 AND status != 'İptal Edildi' GROUP BY customer_name ORDER BY customer_name ASC").all();
             const unpaidExpensesGrouped = await env.DB.prepare("SELECT vendor_name, SUM(amount) as total_debt, COUNT(id) as item_count FROM expenses WHERE is_paid = 0 GROUP BY vendor_name ORDER BY vendor_name ASC").all();
+
+            const vendorsDb = await env.DB.prepare("SELECT DISTINCT vendor_name FROM expenses WHERE vendor_name IS NOT NULL AND vendor_name != 'Kasa Çıkışı'").all();
+            const itemsDb = await env.DB.prepare("SELECT DISTINCT description FROM expenses WHERE description IS NOT NULL AND description NOT LIKE '[KASA ÇEKİMİ]%'").all();
 
             return jsonResponse({
               stats: { income, expense, net: income - expense },
@@ -155,7 +167,9 @@ export default {
               chatLogs,
               products,
               unpaidOrdersGrouped: unpaidOrdersGrouped.results,
-              unpaidExpensesGrouped: unpaidExpensesGrouped.results
+              unpaidExpensesGrouped: unpaidExpensesGrouped.results,
+              vendorList: vendorsDb.results.map(v => v.vendor_name),
+              itemList: itemsDb.results.map(i => i.description)
             });
           }
 
@@ -165,6 +179,12 @@ export default {
 
             if (act === "update_status") {
               await env.DB.prepare("UPDATE orders SET status = ?, cancel_reason = ? WHERE id = ?").bind(body.status, body.cancel_reason || null, body.order_id).run();
+              if (body.status === 'İptal Edildi') {
+                const items = await env.DB.prepare("SELECT p.bread_type, COUNT(o.id) as qty FROM order_items o JOIN products p ON o.product_name = p.name WHERE o.order_id = ? GROUP BY p.bread_type").bind(body.order_id).all();
+                for(let it of items.results) {
+                    if(it.bread_type) await env.DB.prepare("UPDATE products SET stock = stock + ? WHERE bread_type = ?").bind(it.qty, it.bread_type).run();
+                }
+              }
               return jsonResponse({ success: true });
             }
             if (act === "toggle_payment") {
@@ -174,6 +194,21 @@ export default {
             if (act === "add_expense") {
               await env.DB.prepare("INSERT INTO expenses (vendor_name, description, quantity, amount, is_paid, created_at) VALUES (?, ?, ?, ?, ?, ?)")
                 .bind(body.vendor_name, body.description, body.quantity || 1, body.amount, body.is_paid ? 1 : 0, filterDate + ' ' + new Date().toTimeString().split(' ')[0]).run();
+              return jsonResponse({ success: true });
+            }
+            if (act === "withdraw_cash") {
+              const desc = "[KASA ÇEKİMİ] " + body.description;
+              await env.DB.prepare("INSERT INTO expenses (vendor_name, description, quantity, amount, is_paid, created_at) VALUES ('Kasa Çıkışı', ?, 1, ?, 1, ?)")
+                .bind(desc, body.amount, filterDate + ' ' + new Date().toTimeString().split(' ')[0]).run();
+              return jsonResponse({ success: true });
+            }
+            if (act === "pay_vendor_debt") {
+              if (body.expense_id) await env.DB.prepare("UPDATE expenses SET is_paid = 1 WHERE id = ?").bind(body.expense_id).run();
+              else await env.DB.prepare("UPDATE expenses SET is_paid = 1 WHERE vendor_name = ? AND is_paid = 0").bind(body.vendor_name).run();
+              return jsonResponse({ success: true });
+            }
+            if (act === "pay_customer_debt") {
+              await env.DB.prepare("UPDATE orders SET is_paid = 1 WHERE customer_name = ? AND is_paid = 0 AND status != 'İptal Edildi'").bind(body.customer_name).run();
               return jsonResponse({ success: true });
             }
             if (act === "delete_expense") {
@@ -186,15 +221,42 @@ export default {
             }
             if (act === "save_product") {
               if (body.id) {
-                await env.DB.prepare("UPDATE products SET name = ?, price = ?, stock = ?, bread_type = ? WHERE id = ?")
-                  .bind(body.name, body.price, body.stock, body.bread_type || "Standart", body.id).run();
+                await env.DB.prepare("UPDATE products SET name = ?, description = ?, price = ?, stock = ?, bread_type = ? WHERE id = ?")
+                  .bind(body.name, body.description || '', body.price, body.stock, body.bread_type || "Standart", body.id).run();
+              } else {
+                await env.DB.prepare("INSERT INTO products (name, description, price, img, stock, bread_type) VALUES (?, ?, ?, 'img/default.jpg', ?, ?)")
+                  .bind(body.name, body.description || '', body.price, body.stock, body.bread_type || "Standart").run();
               }
+              return jsonResponse({ success: true });
+            }
+            if (act === "delete_product") {
+              await env.DB.prepare("DELETE FROM products WHERE id = ?").bind(body.id).run();
+              return jsonResponse({ success: true });
+            }
+            if (act === "admin_place_order") {
+               await env.DB.prepare("INSERT INTO orders (customer_name, phone, email, address, order_note, total_price, payment_method, status, is_paid, created_at) VALUES (?, ?, 'admin@manuel', ?, 'Admin Panelinden Girildi', ?, ?, 'Hazırlanıyor', ?, ?)")
+                .bind(body.customer_name, body.phone, body.address, body.price, body.payment_method, body.is_paid ? 1 : 0, filterDate + ' ' + new Date().toTimeString().split(' ')[0]).run();
+               const insertOrder = await env.DB.prepare("SELECT last_insert_rowid() as id").first();
+               const orderId = insertOrder.id;
+               
+               const unitPrice = body.quantity > 0 ? (body.price / body.quantity) : body.price;
+               for (let i = 0; i < body.quantity; i++) {
+                 await env.DB.prepare("INSERT INTO order_items (order_id, product_name, options, drink, price) VALUES (?, ?, 'Standart', ?, ?)").bind(orderId, body.product_name, body.drink || 'Yok', unitPrice).run();
+               }
+               return jsonResponse({ success: true });
+            }
+            if (act === "send_wa_reply") {
+              await env.DB.prepare("INSERT INTO whatsapp_messages (phone, customer_name, message, direction, is_read) VALUES (?, 'Biz', ?, 'outbound', 1)").bind(body.wa_phone, body.wa_message).run();
+              return jsonResponse({ success: true });
+            }
+            if (act === "mark_wa_read") {
+              await env.DB.prepare("UPDATE whatsapp_messages SET is_read = 1 WHERE phone = ?").bind(body.wa_phone).run();
               return jsonResponse({ success: true });
             }
             return jsonResponse({ success: false });
           }
         }
-        // 4. YAPAY ZEKA ASİSTAN API (/api/bot)
+        
         if (path === "/api/bot" && request.method === "POST") {
           const data = await request.json();
           const chatHistory = data.chatHistory || [];
@@ -247,7 +309,6 @@ export default {
       }
     }
 
-    // Statik Dosyaları (public/) Sun
     if (env.ASSETS) {
       return env.ASSETS.fetch(request);
     }
