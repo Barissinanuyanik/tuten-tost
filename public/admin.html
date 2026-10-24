@@ -6,15 +6,16 @@
     <title>Yönetim Paneli | Tüten Tost</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }</style>
 </head>
 <body class="bg-gray-100 text-gray-800 flex flex-col md:flex-row h-screen overflow-hidden">
 
-    <div id="new-order-alert" class="hidden fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-4 animate-bounce border-2 border-white">
+    <div id="new-order-alert" class="hidden fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-4 animate-bounce border-2 border-white cursor-pointer" onclick="location.reload()">
         <div>
-            <strong class="block text-lg"><i class="fas fa-bell"></i> Yeni Sipariş Geldi!</strong>
+            <strong class="block text-lg"><i class="fas fa-bell"></i> Yeni Mesaj/Sipariş Geldi!</strong>
             <span class="text-xs opacity-90">Ekranı yenilemek için tıklayın.</span>
         </div>
-        <button onclick="location.reload()" class="bg-white text-green-600 hover:bg-green-50 font-black px-4 py-2 rounded-lg text-sm transition shadow-sm">Yenile</button>
+        <button class="bg-white text-green-600 hover:bg-green-50 font-black px-4 py-2 rounded-lg text-sm transition shadow-sm">Yenile</button>
     </div>
 
     <!-- SOL MENÜ -->
@@ -24,7 +25,7 @@
             <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">Yönetim Paneli</p>
         </div>
         
-        <nav class="flex-none md:flex-1 p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-0 md:space-y-2 overflow-x-auto md:overflow-y-auto">
+        <nav class="flex-none md:flex-1 p-2 md:p-4 flex flex-row md:flex-col gap-2 md:gap-0 md:space-y-2 overflow-x-auto md:overflow-y-auto no-scrollbar">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap bg-red-600 text-white font-bold shadow">
                 <i class="fas fa-chart-pie w-5 text-center"></i> <span class="text-sm md:text-base">Genel Durum</span>
             </button>
@@ -48,12 +49,12 @@
             </button>
         </nav>
 
-        <div class="p-2 md:p-4 border-t border-gray-800 flex flex-row md:flex-col gap-2 md:gap-3">
-            <button id="enable-sound-btn" class="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-xs font-bold px-2 py-2 rounded-lg transition shadow flex justify-center items-center gap-1">
-                <i class="fas fa-volume-up"></i> <span>Ses Bildirimi Aç</span>
+        <div class="p-2 md:p-4 border-t border-gray-800 flex flex-row md:flex-col gap-2 md:gap-3 md:space-y-3">
+            <button id="enable-sound-btn" class="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-2 md:py-2.5 rounded-lg transition shadow flex justify-center items-center gap-1 md:gap-2">
+                <i class="fas fa-volume-up"></i> <span class="hidden md:inline">Ses Bildirimi Aç</span><span class="md:hidden">Ses</span>
             </button>
-            <a href="/" class="flex-1 flex items-center justify-center gap-1 w-full bg-gray-800 hover:bg-red-600 text-white text-[10px] md:text-xs font-bold px-2 py-2 rounded-lg transition">
-                <i class="fas fa-sign-out-alt"></i> Siteye Dön
+            <a href="/" class="flex-1 flex items-center justify-center gap-1 md:gap-2 w-full bg-gray-800 hover:bg-red-600 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-2 md:py-2.5 rounded-lg transition">
+                <i class="fas fa-sign-out-alt"></i> Çıkış
             </a>
         </div>
     </aside>
@@ -62,7 +63,7 @@
     <main class="flex-1 flex flex-col h-full overflow-hidden bg-gray-100">
         <header class="bg-white shadow-sm px-4 md:px-8 py-4 flex justify-between items-center z-10">
             <h2 id="page-title" class="text-sm md:text-xl font-black text-gray-800 uppercase truncate">Ön Muhasebe & Dashboard</h2>
-            <div id="current-date" class="text-xs md:text-sm font-bold text-gray-500"></div>
+            <div id="current-date" class="text-[10px] md:text-sm font-bold text-gray-500 whitespace-nowrap ml-2"></div>
         </header>
         <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8"></div>
     </main>
@@ -72,6 +73,7 @@
         let currentTab = 'dashboard';
         let filterDate = new Date().toISOString().split('T')[0];
         let lastKnownOrderId = 0;
+        let activeWaPhone = null;
 
         async function loadData() {
             const res = await fetch(`/api/admin?action=data&filter_date=${filterDate}`);
@@ -95,11 +97,25 @@
         function switchTab(tab) {
             currentTab = tab;
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = "nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800";
+                btn.className = "nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap text-gray-300 hover:bg-gray-800 bg-gray-800 md:bg-transparent";
             });
             const activeBtn = document.getElementById('nav-' + tab);
-            if(activeBtn) activeBtn.className = "nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap bg-red-600 text-white font-bold shadow";
+            let color = 'bg-red-600';
+            if (tab === 'whatsapp_inbox') color = 'bg-green-600';
+            if(activeBtn) activeBtn.className = `nav-btn flex items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition whitespace-nowrap ${color} text-white font-bold shadow`;
             renderTab();
+        }
+
+        function cleanChatLog(html) {
+            if (!html) return '';
+            let text = html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/div>|<\/li>|<\/p>/gi, "\n").replace(/<\/span><span/gi, "</span> - <span");
+            let div = document.createElement("div"); div.innerHTML = text;
+            return div.innerText.replace(/\n{3,}/g, "\n\n").trim();
+        }
+
+        function formatTime(dateStr) {
+            if (!dateStr) return '';
+            return new Date(dateStr).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
         }
 
         function renderTab() {
@@ -110,77 +126,143 @@
 
             if (currentTab === 'dashboard') {
                 title.innerHTML = '<i class="fas fa-chart-pie text-red-500 mr-2"></i> Ön Muhasebe & Dashboard';
+                let productOptions = data.products.map(p => `<option value="${p.name}" data-price="${p.price}">${p.name}</option>`).join('');
+                
                 area.innerHTML = `
                     <div class="space-y-6 max-w-[1400px] mx-auto pb-20">
                         <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 flex justify-between items-center flex-wrap gap-4">
                             <div>
                                 <h3 class="font-black text-gray-800 text-lg"><i class="fas fa-calendar-alt text-indigo-500"></i> Günlük Kasa Özeti</h3>
-                                <p class="text-xs text-gray-500">Seçilen tarih: ${filterDate}</p>
+                                <p class="text-xs text-gray-500">Kasa durumu seçtiğiniz güne göre hesaplanır.</p>
                             </div>
-                            <input type="date" value="${filterDate}" onchange="filterDate=this.value; loadData();" class="border border-gray-300 px-4 py-2 rounded-xl text-sm font-bold bg-gray-50 cursor-pointer">
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-green-500">
-                                <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Tahsilat</h3>
-                                <p class="text-2xl font-black text-green-600 mt-2">${data.stats.income} TL</p>
-                            </div>
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
-                                <h3 class="text-gray-500 font-bold text-xs uppercase">Toplam Masraf</h3>
-                                <p class="text-2xl font-black text-red-600 mt-2">${data.stats.expense} TL</p>
-                            </div>
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
-                                <h3 class="text-gray-500 font-bold text-xs uppercase">Net Kasa</h3>
-                                <p class="text-2xl font-black text-blue-600 mt-2">${data.stats.net} TL</p>
+                            <div class="flex items-center gap-3">
+                                <input type="date" value="${filterDate}" onchange="filterDate=this.value; loadData();" class="border border-gray-300 px-4 py-2 rounded-xl text-sm font-bold bg-gray-50 cursor-pointer outline-none">
                             </div>
                         </div>
 
-                        <!-- Detaylı Muhasebe ve Cari Kart Alanları -->
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <!-- Masraf / Malzeme Ekle -->
-                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
-                                <h3 class="font-black text-sm uppercase mb-4 text-gray-700"><i class="fas fa-box-open text-red-500 mr-1"></i> Masraf / Malzeme Ekle</h3>
-                                <div class="space-y-3">
-                                    <input id="exp_vendor" placeholder="Tedarikçi / Cari" class="border p-2.5 rounded-xl text-sm w-full">
-                                    <input id="exp_desc" placeholder="Açıklama" class="border p-2.5 rounded-xl text-sm w-full">
-                                    <div class="grid grid-cols-2 gap-2">
-                                        <input id="exp_qty" type="number" value="1" placeholder="Adet" class="border p-2.5 rounded-xl text-sm">
-                                        <input id="exp_amount" type="number" placeholder="Tutar (TL)" class="border p-2.5 rounded-xl text-sm">
+                        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-amber-500 flex flex-col justify-between relative overflow-hidden">
+                                <div>
+                                    <h2 class="text-gray-500 font-bold text-sm uppercase tracking-wider mb-4"><i class="fas fa-wallet text-amber-500"></i> Kasa Durumu</h2>
+                                    <div class="space-y-2 mb-4">
+                                        <div class="flex justify-between items-center text-sm font-semibold"><span class="text-green-600">Tahsilat (Giren):</span><span>+${data.stats.income} TL</span></div>
+                                        <div class="flex justify-between items-center text-sm font-semibold"><span class="text-red-600">Ödenen (Çıkan):</span><span>-${data.stats.expense} TL</span></div>
+                                        <hr>
+                                        <div class="flex justify-between items-center text-2xl font-black text-gray-900 pt-2"><span>Net Kasa:</span><span class="${data.stats.net >= 0 ? 'text-green-600' : 'text-red-600'}">${data.stats.net} TL</span></div>
                                     </div>
-                                    <button onclick="addExpense()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition">Masrafı Kaydet</button>
+                                </div>
+                                <div class="mt-2 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                                    <h3 class="text-xs font-bold text-amber-800 mb-2"><i class="fas fa-hand-holding-usd"></i> Kasadan Para Al (Çıkış)</h3>
+                                    <div class="flex flex-col gap-2">
+                                        <input type="text" id="wd_desc" placeholder="Kime / Neden Verildi?" class="w-full border border-amber-300 p-2 rounded-lg text-xs outline-none bg-white">
+                                        <div class="flex gap-2">
+                                            <input type="number" id="wd_amount" placeholder="Tutar (TL)" class="w-full border border-amber-300 p-2 rounded-lg text-xs outline-none bg-white">
+                                            <button onclick="apiAction({action:'withdraw_cash', description: document.getElementById('wd_desc').value, amount: document.getElementById('wd_amount').value})" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-2 rounded-lg transition text-xs whitespace-nowrap">Çek</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Alacaklar (Müşteri Carileri) -->
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col">
-                                <h3 class="text-base font-black mb-3 text-gray-800 flex items-center gap-2"><i class="fas fa-arrow-down text-green-500"></i> Alacaklarımız</h3>
-                                <div class="flex-1 space-y-2 overflow-y-auto max-h-[300px]">
-                                    ${(!data.unpaidOrdersGrouped || data.unpaidOrdersGrouped.length === 0) ? '<p class="text-xs text-gray-500 text-center py-4">Bekleyen alacak bulunmuyor.</p>' : data.unpaidOrdersGrouped.map(uo => `
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-red-500">
+                                <h2 class="text-gray-500 font-bold text-sm uppercase tracking-wider mb-4"><i class="fas fa-box-open text-red-500"></i> Malzeme / Masraf Gir</h2>
+                                <div class="space-y-3 relative">
+                                    <div class="relative">
+                                        <input type="text" id="exp_vendor" placeholder="Tedarikçi/Cari" class="w-full border p-2 rounded-lg text-sm outline-none" autocomplete="off">
+                                        <div id="vendor_dropdown" class="absolute z-50 w-full bg-white border border-gray-300 mt-1 max-h-40 overflow-y-auto hidden shadow-xl rounded-lg"></div>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="text" id="exp_desc" placeholder="Açıklama" class="w-full border p-2 rounded-lg text-sm outline-none" autocomplete="off">
+                                        <div id="item_dropdown" class="absolute z-50 w-full bg-white border border-gray-300 mt-1 max-h-40 overflow-y-auto hidden shadow-xl rounded-lg"></div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="number" id="exp_qty" value="1" placeholder="Adet" class="w-full border p-2 rounded-lg text-sm outline-none">
+                                        <input type="number" id="exp_amount" placeholder="Tutar (TL)" class="w-full border p-2 rounded-lg text-sm outline-none">
+                                    </div>
+                                    <div class="flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-200">
+                                        <label class="flex items-center gap-2 text-xs font-bold text-gray-800 cursor-pointer"><input type="checkbox" id="exp_is_paid" checked class="accent-red-600 w-4 h-4"> Nakit Ödendi</label>
+                                    </div>
+                                    <button onclick="addExpense()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2.5 rounded-lg transition text-sm shadow-md">Masrafı Kaydet</button>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                                <h2 class="text-gray-500 font-bold text-sm uppercase tracking-wider mb-4"><i class="fas fa-plus-circle text-blue-500"></i> Hızlı Sipariş Ekle</h2>
+                                <div class="space-y-3">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" id="qo_name" placeholder="Müşteri Adı" class="border p-2 rounded-lg text-sm outline-none">
+                                        <input type="text" id="qo_phone" placeholder="Telefon" class="border p-2 rounded-lg text-sm outline-none">
+                                    </div>
+                                    <input type="text" id="qo_address" placeholder="Adres / Not" class="w-full border p-2 rounded-lg text-sm outline-none">
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <select id="qo_product" class="col-span-2 border p-2 rounded-lg text-sm outline-none bg-white" onchange="updateQOPrice()">
+                                            <option value="" data-price="0">Ürün Seçin...</option>
+                                            ${productOptions}
+                                            <option value="Özel Sipariş" data-price="0">Diğer (Özel)</option>
+                                        </select>
+                                        <input type="number" id="qo_qty" value="1" min="1" placeholder="Adet" class="border p-2 rounded-lg text-sm outline-none" onchange="updateQOPrice()">
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2 mt-2">
+                                        <select id="qo_drink" class="border p-2 rounded-lg text-xs font-bold outline-none" onchange="updateQOPrice()">
+                                            <option value="Yok" data-price="0">İçecek Yok</option>
+                                            <option value="Kola" data-price="45">Kola (+45)</option>
+                                            <option value="Ayran" data-price="25">Ayran (+25)</option>
+                                        </select>
+                                        <select id="qo_payment" class="border p-2 rounded-lg text-xs font-bold outline-none">
+                                            <option value="Nakit">Nakit</option><option value="Kredi Kartı / POS">Kredi Kartı / POS</option>
+                                        </select>
+                                        <input type="number" id="qo_price" placeholder="Tutar" class="border p-2 rounded-lg text-sm font-bold text-red-600 outline-none">
+                                    </div>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <label class="flex items-center gap-1 text-xs font-bold text-green-700 cursor-pointer bg-green-50 px-2 py-1.5 rounded border border-green-200">
+                                            <input type="checkbox" id="qo_is_paid" class="accent-green-600"> Peşin Ödendi
+                                        </label>
+                                        <button onclick="addQuickOrder()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg transition text-xs shadow-md">Siparişi Gir</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col h-[400px]">
+                                <h2 class="text-base font-black mb-1 text-gray-800 flex items-center gap-2"><i class="fas fa-arrow-down text-green-500"></i> Alacaklarımız</h2>
+                                <div class="flex-1 overflow-y-auto space-y-2 pr-2">
+                                    ${(!data.unpaidOrdersGrouped || data.unpaidOrdersGrouped.length===0) ? '<p class="text-xs text-gray-500 text-center py-4">Tüm cariler ödendi.</p>' : data.unpaidOrdersGrouped.map(uo => `
                                         <div class="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
-                                            <div>
-                                                <span class="block font-bold text-sm text-gray-900">${uo.customer_name}</span>
-                                                <span class="text-[11px] text-gray-500">${uo.item_count} İşlem</span>
-                                            </div>
-                                            <div class="text-right">
-                                                <span class="block font-black text-green-600">${uo.total_debt} TL</span>
-                                                <button onclick="apiAction({action:'pay_customer_debt', customer_name:'${uo.customer_name}'})" class="mt-1 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">TAHSİL ET</button>
-                                            </div>
+                                            <div><span class="block font-bold text-sm text-gray-900">${uo.customer_name}</span><span class="text-[11px] text-gray-500">${uo.item_count} İşlem</span></div>
+                                            <div class="text-right"><span class="block font-black text-green-600">${uo.total_debt} TL</span>
+                                            <button onclick="apiAction({action:'pay_customer_debt', customer_name:'${uo.customer_name}'})" class="mt-1 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded">TAHSİL ET</button></div>
                                         </div>
                                     `).join('')}
                                 </div>
                             </div>
 
-                            <!-- Borçlar (Tedarikçi Carileri) -->
-                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col">
-                                <h3 class="text-base font-black mb-3 text-gray-800 flex items-center gap-2"><i class="fas fa-arrow-up text-red-500"></i> Borçlarımız</h3>
-                                <div class="flex-1 space-y-2 overflow-y-auto max-h-[300px]">
-                                    ${(!data.unpaidExpensesGrouped || data.unpaidExpensesGrouped.length === 0) ? '<p class="text-xs text-gray-500 text-center py-4">Tedarikçi borcu bulunmuyor.</p>' : data.unpaidExpensesGrouped.map(ue => `
+                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col h-[400px]">
+                                <h2 class="text-base font-black mb-1 text-gray-800 flex items-center gap-2"><i class="fas fa-arrow-up text-red-500"></i> Borçlarımız</h2>
+                                <div class="flex-1 overflow-y-auto space-y-2 pr-2">
+                                    ${(!data.unpaidExpensesGrouped || data.unpaidExpensesGrouped.length===0) ? '<p class="text-xs text-gray-500 text-center py-4">Tedarikçi borcu yok.</p>' : data.unpaidExpensesGrouped.map(ue => `
                                         <div class="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
-                                            <div>
-                                                <span class="block font-bold text-sm text-gray-900">${ue.vendor_name}</span>
-                                            </div>
-                                            <div class="text-right">
-                                                <span class="block font-black text-red-600">${ue.total_debt} TL</span>
-                                                <button onclick="apiAction({action:'pay_vendor_debt', vendor_name:'${ue.vendor_name}'})" class="mt-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">KASADAN ÖDE</button>
+                                            <div><span class="block font-bold text-sm text-gray-900">${ue.vendor_name}</span></div>
+                                            <div class="text-right"><span class="block font-black text-red-600">${ue.total_debt} TL</span>
+                                            <button onclick="apiAction({action:'pay_vendor_debt', vendor_name:'${ue.vendor_name}'})" class="mt-1 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">KASADAN ÖDE</button></div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col h-[400px]">
+                                <h2 class="text-base font-black mb-1 text-gray-800 flex items-center gap-2"><i class="fas fa-history text-gray-500"></i> Masraf Listesi</h2>
+                                <div class="flex-1 overflow-y-auto space-y-2 pr-2">
+                                    ${data.expenses.map(exp => `
+                                        <div class="flex justify-between items-center p-2 rounded-lg border ${exp.description.includes('[KASA ÇEKİMİ]') ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'}">
+                                            <div class="w-full">
+                                                <div class="flex justify-between items-start w-full">
+                                                    <span class="font-bold text-xs text-gray-900 w-3/4 truncate">${exp.vendor_name} <span class="text-gray-500 font-normal ml-1">(${exp.quantity}x)</span></span>
+                                                    <span class="font-black text-red-600 text-sm w-1/4 text-right">${exp.amount} TL</span>
+                                                </div>
+                                                <div class="flex justify-between items-center mt-1">
+                                                    <span class="text-[10px] ${exp.is_paid ? 'text-green-600' : 'text-red-500'} font-bold">${exp.is_paid ? '✓ Ödendi' : '❌ Borç'}</span>
+                                                    <button onclick="apiAction({action:'delete_expense', expense_id:${exp.id}})" class="text-red-400 hover:text-red-600 text-[10px]"><i class="fas fa-trash"></i> Sil</button>
+                                                </div>
                                             </div>
                                         </div>
                                     `).join('')}
@@ -188,90 +270,302 @@
                             </div>
                         </div>
                     </div>`;
-            } else if (currentTab === 'active_orders') {
-                title.innerHTML = '<i class="fas fa-motorcycle text-amber-500 mr-2"></i> Bekleyen & Yoldaki Siparişler';
-                if (!data.activeOrders || data.activeOrders.length === 0) {
-                    area.innerHTML = `<div class="bg-white p-8 rounded-2xl text-center text-gray-500 font-bold shadow-sm">Bekleyen aktif sipariş bulunmuyor.</div>`;
-                    return;
-                }
-                area.innerHTML = `<div class="space-y-4 max-w-[1400px] mx-auto pb-20">` + data.activeOrders.map(o => `
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <span class="bg-gray-900 text-white font-black px-2 py-1 rounded text-xs">#${o.id}</span>
-                            <span class="text-xs font-bold ml-2 px-2 py-1 rounded ${o.is_paid ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">${o.is_paid ? 'ÖDENDİ' : 'ÖDENMEDİ'}</span>
-                            <h4 class="font-bold text-gray-900 mt-2">${o.customer_name} (${o.phone})</h4>
-                            <p class="text-xs text-gray-500">${o.address}</p>
-                            ${o.order_note ? `<p class="text-xs text-amber-700 mt-1 font-bold">${o.order_note}</p>` : ''}
-                        </div>
-                        <div class="flex flex-col items-end gap-2">
-                            <span class="text-lg font-black text-red-600">${o.total_price} TL (${o.payment_method || 'Nakit'})</span>
-                            <div class="flex gap-2">
-                                <button onclick="apiAction({action:'toggle_payment', order_id:${o.id}, is_paid:${o.is_paid ? 0 : 1}})" class="bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">${o.is_paid ? 'Ödemeyi Geri Al' : 'Tahsil Et'}</button>
-                                <select onchange="apiAction({action:'update_status', order_id:${o.id}, status:this.value})" class="border p-1.5 rounded-lg text-xs font-bold bg-gray-50">
-                                    <option value="Hazırlanıyor" ${o.status === 'Hazırlanıyor' ? 'selected' : ''}>Hazırlanıyor</option>
-                                    <option value="Yolda" ${o.status === 'Yolda' ? 'selected' : ''}>Yolda</option>
-                                    <option value="Teslim Edildi" ${o.status === 'Teslim Edildi' ? 'selected' : ''}>Teslim Edildi</option>
-                                    <option value="İptal Edildi" ${o.status === 'İptal Edildi' ? 'selected' : ''}>İptal Edildi</option>
-                                </select>
+                
+                setTimeout(() => {
+                    setupAutocomplete('exp_vendor', 'vendor_dropdown', data.vendorList || []);
+                    setupAutocomplete('exp_desc', 'item_dropdown', data.itemList || []);
+                }, 100);
+
+            } else if (currentTab === 'active_orders' || currentTab === 'completed_orders') {
+                const isCompleted = currentTab === 'completed_orders';
+                const orders = isCompleted ? data.completedOrders : data.activeOrders;
+                title.innerHTML = isCompleted ? '<i class="fas fa-check-double text-green-500 mr-2"></i> Tamamlanan Siparişler' : '<i class="fas fa-motorcycle text-amber-500 mr-2"></i> Bekleyen & Yoldaki Siparişler';
+                
+                let html = `<div class="max-w-[1400px] mx-auto pb-20">`;
+                if(isCompleted) {
+                    const rev = orders.filter(o=>o.status==='Teslim Edildi').reduce((a,c)=>a+c.total_price,0);
+                    const compCount = orders.filter(o=>o.status==='Teslim Edildi').length;
+                    const cancCount = orders.filter(o=>o.status==='İptal Edildi').length;
+                    html += `
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-green-500 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div class="flex items-center gap-6">
+                                <div><h3 class="font-black text-gray-800 text-lg"><i class="fas fa-chart-line text-green-500"></i> Günlük Satış Özeti</h3><p class="text-xs text-gray-500">${filterDate}</p></div>
+                                <div class="hidden md:flex gap-4 border-l pl-4 border-gray-200">
+                                    <div class="text-center"><span class="block text-[10px] font-bold text-gray-400 uppercase">Toplam Ciro</span><span class="text-lg font-black text-green-600">${rev} TL</span></div>
+                                    <div class="text-center"><span class="block text-[10px] font-bold text-gray-400 uppercase">Biten/İptal</span><span class="text-lg font-black text-gray-800">${compCount} / <span class="text-red-500">${cancCount}</span></span></div>
+                                </div>
                             </div>
-                        </div>
-                    </div>`).join('') + `</div>`;
-            } else if (currentTab === 'completed_orders') {
-                title.innerHTML = '<i class="fas fa-check-double text-green-500 mr-2"></i> Tamamlanan Siparişler';
-                area.innerHTML = `<div class="space-y-3 max-w-[1400px] mx-auto pb-20">` + (data.completedOrders || []).map(o => `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border flex justify-between items-center">
-                        <div>
-                            <span class="font-black text-xs text-gray-500">#${o.id}</span>
-                            <h4 class="font-bold text-sm">${o.customer_name} - ${o.phone}</h4>
-                            <p class="text-xs text-gray-400">${o.address}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-black text-red-600 block">${o.total_price} TL</span>
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${o.status === 'Teslim Edildi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${o.status}</span>
-                        </div>
-                    </div>`).join('') + `</div>`;
+                            <input type="date" value="${filterDate}" onchange="filterDate=this.value; loadData();" class="border border-gray-300 px-3 py-2 rounded-xl text-sm font-bold bg-gray-50 cursor-pointer outline-none">
+                        </div>`;
+                }
+                
+                if (!orders || orders.length === 0) {
+                    html += `<p class="text-center text-gray-500 py-12 bg-white rounded-2xl shadow">Sipariş bulunmuyor.</p>`;
+                } else {
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">` + orders.map(o => `
+                        <div class="bg-white rounded-2xl shadow-sm border ${o.status==='İptal Edildi' ? 'border-red-400 bg-red-50/30' : (o.is_paid?'border-green-400':'border-gray-200')} p-5 flex flex-col justify-between gap-4">
+                            <div class="flex justify-between items-start border-b pb-3 border-gray-100">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-gray-900 text-white font-black px-2 py-1 rounded text-xs">#${o.id}</span>
+                                        <span class="text-[11px] text-gray-500"><i class="far fa-calendar"></i> ${formatTime(o.created_at)}</span>
+                                        <span class="font-bold px-2 py-0.5 rounded text-[10px] ${o.is_paid ? 'bg-green-100 text-green-700 border-green-300' : 'bg-amber-100 text-amber-700 border-amber-300'}">${o.is_paid ? '<i class="fas fa-check"></i> ÖDENDİ' : '<i class="fas fa-hourglass-half"></i> BORÇLU'}</span>
+                                    </div>
+                                    <h3 class="text-base font-bold text-gray-900">${o.customer_name}</h3>
+                                    <p class="text-[11px] text-gray-500">📞 ${o.phone}</p>
+                                    <p class="text-[11px] text-gray-600 bg-gray-50 p-1.5 rounded border mt-1"><i class="fas fa-map-marker-alt text-red-500"></i> ${o.address}</p>
+                                    ${o.order_note ? `<p class="text-[11px] text-amber-800 bg-amber-50 p-1.5 rounded border border-amber-100 mt-1"><strong>Not:</strong> ${o.order_note}</p>` : ''}
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] text-gray-400 block font-bold">Tutar</span>
+                                    <span class="text-xl font-black ${o.is_paid?'text-green-600':'text-gray-900'}">${o.total_price} TL</span>
+                                    <button onclick="apiAction({action:'toggle_payment', order_id:${o.id}, is_paid:${o.is_paid?0:1}})" class="${o.is_paid?'text-[10px] font-bold text-red-500 hover:underline':'bg-green-500 hover:bg-green-600 text-white text-[11px] font-black px-3 py-1 rounded shadow mt-1'}">${o.is_paid?'Ödemeyi Geri Al':'TAHSİL ET'}</button>
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row justify-between items-end gap-4">
+                                <ul class="space-y-1 text-xs w-full sm:w-1/2">
+                                    ${(o.items||[]).map(i=>`<li class="bg-gray-50 p-2 rounded-lg border"><span class="font-bold block">${i.product_name}</span><span class="text-[10px] text-gray-500 block">${i.options} ${i.drink!=='Yok'?'| 🥤 '+i.drink:''}</span></li>`).join('')}
+                                </ul>
+                                <div class="w-full sm:w-1/2 flex flex-col gap-2">
+                                    <select onchange="apiAction({action:'update_status', order_id:${o.id}, status:this.value, cancel_reason: this.value==='İptal Edildi'?'Diğer':''})" class="w-full border p-2 rounded-xl bg-white font-bold text-xs shadow-sm">
+                                        <option value="Hazırlanıyor" ${o.status==='Hazırlanıyor'?'selected':''}>⏳ Hazırlanıyor</option>
+                                        <option value="Yolda" ${o.status==='Yolda'?'selected':''}>🛵 Yolda</option>
+                                        <option value="Teslim Edildi" ${o.status==='Teslim Edildi'?'selected':''}>✅ Teslim Edildi</option>
+                                        <option value="İptal Edildi" ${o.status==='İptal Edildi'?'selected':''}>❌ İptal Edildi</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>`).join('') + `</div>`;
+                }
+                area.innerHTML = html + `</div>`;
+
             } else if (currentTab === 'whatsapp_inbox') {
                 title.innerHTML = '<i class="fab fa-whatsapp text-green-500 mr-2"></i> WhatsApp Gelen Kutusu';
-                area.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow-sm"><p class="text-sm text-gray-600 font-bold">Toplam Kayıtlı Mesaj: ${data.waMessages.length}</p></div>`;
+                const grouped = {};
+                data.waMessages.forEach(m => {
+                    if(!grouped[m.phone]) grouped[m.phone] = { phone: m.phone, c_name: m.customer_name, last_msg: m.created_at, unread: 0, msgs: [] };
+                    grouped[m.phone].msgs.push(m);
+                    if(m.is_read === 0 && m.direction === 'inbound') grouped[m.phone].unread++;
+                });
+                const contacts = Object.values(grouped).sort((a,b) => new Date(b.last_msg) - new Date(a.last_msg));
+                if (!activeWaPhone && contacts.length > 0) activeWaPhone = contacts[0].phone;
+                
+                let contactHTML = contacts.map(c => `
+                    <div onclick="selectWaPhone('${c.phone}')" class="flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer ${activeWaPhone === c.phone ? 'bg-green-50/50' : ''}">
+                        <div class="overflow-hidden">
+                            <div class="font-bold text-gray-800 text-sm truncate">${c.c_name}</div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">${c.phone}</div>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="text-[10px] text-gray-400 font-bold">${formatTime(c.last_msg)}</span>
+                            ${c.unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full">${c.unread}</span>` : ''}
+                        </div>
+                    </div>`).join('');
+
+                let chatHTML = '';
+                if (!activeWaPhone) {
+                    chatHTML = `<div class="flex-1 flex flex-col items-center justify-center text-gray-400 bg-[#e5ddd5]/30"><i class="fab fa-whatsapp text-6xl mb-4 text-green-200"></i><p class="font-bold text-sm">Cevaplamak için bir sohbet seçin</p></div>`;
+                } else {
+                    const msgs = (grouped[activeWaPhone]?.msgs || []).sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+                    let msgList = msgs.map(m => {
+                        return m.direction === 'inbound' ? 
+                            `<div class="flex justify-start"><div class="bg-white text-gray-800 p-3 rounded-2xl rounded-tl-none shadow-sm min-w-[120px] max-w-[80%] text-sm relative"><span class="block mb-2 font-medium">${m.message.replace(/\n/g,'<br>')}</span><span class="text-[10px] text-gray-400 block text-right mt-1 absolute bottom-1 right-2">${formatTime(m.created_at)}</span></div></div>` :
+                            `<div class="flex justify-end"><div class="bg-[#dcf8c6] text-gray-800 p-3 rounded-2xl rounded-tr-none shadow-sm min-w-[120px] max-w-[80%] text-sm relative"><span class="block mb-2 font-medium">${m.message.replace(/\n/g,'<br>')}</span><span class="text-[10px] text-gray-500 block text-right mt-1 absolute bottom-1 right-2">${formatTime(m.created_at)} <i class="fas fa-check-double text-blue-500"></i></span></div></div>`;
+                    }).join('');
+                    
+                    chatHTML = `
+                        <div class="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between"><h3 class="font-black text-gray-800 flex items-center"><i class="fas fa-user-circle text-gray-400 text-2xl mr-2"></i> ${activeWaPhone}</h3></div>
+                        <div id="wa-chat-box" class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#e5ddd5]">${msgList}</div>
+                        <div class="p-3 bg-gray-100 border-t border-gray-200 flex gap-2">
+                            <input type="text" id="wa_msg_input" class="flex-1 border-none p-3.5 rounded-xl outline-none shadow-sm text-sm" placeholder="Mesajınızı buraya yazın..." onkeypress="if(event.key==='Enter') sendWaMsg()">
+                            <button onclick="sendWaMsg()" class="bg-green-600 hover:bg-green-700 text-white w-14 rounded-xl flex items-center justify-center transition shadow-sm"><i class="fas fa-paper-plane text-lg"></i></button>
+                        </div>`;
+                }
+
+                area.innerHTML = `<div class="max-w-7xl mx-auto h-[calc(100vh-140px)] flex gap-4 md:gap-6">
+                    <div class="w-1/3 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-gray-100 bg-green-50 flex items-center justify-between"><h3 class="font-black text-green-800"><i class="fab fa-whatsapp"></i> Mesajlar</h3></div>
+                        <div class="flex-1 overflow-y-auto">${contactHTML || '<p class="text-xs text-gray-500 text-center mt-10">Mesaj yok.</p>'}</div>
+                    </div>
+                    <div class="w-2/3 bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col overflow-hidden relative">${chatHTML}</div>
+                </div>`;
+                
+                setTimeout(() => {
+                    const b = document.getElementById("wa-chat-box");
+                    if(b) b.scrollTop = b.scrollHeight;
+                }, 100);
+
             } else if (currentTab === 'chat_logs') {
                 title.innerHTML = '<i class="fas fa-robot text-pink-500 mr-2"></i> Web Asistan Kayıtları';
-                area.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[1400px] mx-auto pb-20">` + (data.chatLogs || []).map(log => `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border space-y-2">
-                        <span class="text-xs font-bold text-gray-400">Seans: ${log.session_id}</span>
-                        <p class="text-xs text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">${log.chat_data || ''}</p>
-                    </div>`).join('') + `</div>`;
+                area.innerHTML = `<div class="max-w-7xl mx-auto pb-20 space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-pink-500">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${(data.chatLogs || []).map(log => `
+                                <div class="bg-stone-50 border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                                    <div>
+                                        <div class="flex justify-between items-start mb-2 border-b border-gray-200 pb-2">
+                                            <span class="text-xs font-bold text-gray-800"><i class="fas fa-user-secret text-gray-400"></i> Müşteri Seansı</span>
+                                            <span class="text-[10px] text-gray-500 font-bold bg-white px-2 py-1 rounded border">${formatTime(log.last_updated)}</span>
+                                        </div>
+                                        <div class="text-xs text-gray-600 line-clamp-4 mb-3 italic">${cleanChatLog(log.chat_data).substring(0,180)}...</div>
+                                    </div>
+                                    <button onclick="showChatLog(${log.id})" class="w-full bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold py-2 rounded-lg text-xs border border-pink-200 transition">Tamamını Oku</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div id="chat_modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+                    <div class="bg-white p-6 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto relative shadow-2xl">
+                        <button onclick="document.getElementById('chat_modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-red-600"><i class="fas fa-times text-2xl"></i></button>
+                        <h3 class="text-lg font-black mb-4 border-b border-gray-100 pb-3 text-gray-800"><i class="fas fa-robot text-pink-600 mr-2"></i> Detaylı Sohbet Kaydı</h3>
+                        <div id="chat_modal_content" class="text-xs space-y-3 whitespace-pre-wrap text-gray-700 font-medium bg-stone-50 p-4 rounded-xl border border-gray-100"></div>
+                    </div>
+                </div>`;
             } else if (currentTab === 'customers') {
                 title.innerHTML = '<i class="fas fa-users text-blue-500 mr-2"></i> Müşteriler';
-                area.innerHTML = `<div class="bg-white rounded-2xl shadow-sm border overflow-hidden max-w-[1400px] mx-auto pb-20"><table class="w-full text-left text-sm"><thead class="bg-gray-100 text-gray-600 text-xs uppercase"><tr><th class="p-3">Telefon</th><th class="p-3">Kayıt Tarihi</th><th class="p-3 text-center">İşlem</th></tr></thead><tbody>` + (data.customers || []).map(c => `
-                    <tr class="border-b"><td class="p-3 font-bold">${c.phone}</td><td class="p-3 text-xs text-gray-500">${c.created_at}</td><td class="p-3 text-center"><button onclick="apiAction({action:'delete_customer', customer_id:${c.id}})" class="text-red-500 font-bold text-xs">Sil</button></td></tr>`).join('') + `</tbody></table></div>`;
+                area.innerHTML = `<div class="max-w-7xl mx-auto pb-20 space-y-6"><div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-blue-500 overflow-x-auto"><table class="w-full text-left text-sm min-w-[800px]"><thead class="bg-gray-100 text-gray-600 text-[11px] uppercase"><tr><th class="p-3">Müşteri Adı</th><th class="p-3">Telefon</th><th class="p-3 text-center">Kayıt Tarihi</th><th class="p-3 text-center">İşlem</th></tr></thead><tbody>` + (data.customers || []).map(c => `
+                    <tr class="border-b hover:bg-gray-50 transition"><td class="p-3 font-bold">${c.name||'İsimsiz'}</td><td class="p-3">${c.phone}</td><td class="p-3 text-center text-xs text-gray-500">${c.created_at.split(' ')[0]}</td><td class="p-3 text-center"><button onclick="if(confirm('Silinsin mi?')) apiAction({action:'delete_customer', customer_id:${c.id}})" class="text-red-400 hover:text-red-600 font-bold text-xs"><i class="fas fa-trash"></i> Sil</button></td></tr>`).join('') + `</tbody></table></div></div>`;
             } else if (currentTab === 'products') {
-                title.innerHTML = '<i class="fas fa-hamburger text-purple-500 mr-2"></i> Ürün & Stok Yönetimi';
-                area.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-[1400px] mx-auto pb-20">` + data.products.map(p => `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-2">
-                        <input id="pname_${p.id}" value="${p.name}" class="w-full border p-2 rounded-lg font-bold text-sm">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><label class="text-[10px] text-gray-400">Fiyat</label><input id="pprice_${p.id}" type="number" value="${p.price}" class="w-full border p-2 rounded-lg text-sm font-bold text-red-600"></div>
-                            <div><label class="text-[10px] text-gray-400">Stok</label><input id="pstock_${p.id}" type="number" value="${p.stock}" class="w-full border p-2 rounded-lg text-sm font-bold text-blue-600"></div>
+                title.innerHTML = '<i class="fas fa-hamburger text-purple-500 mr-2"></i> Ürün & Menü Yönetimi';
+                area.innerHTML = `<div class="max-w-7xl mx-auto space-y-6 pb-20">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-purple-500">
+                        <h2 class="text-xl font-black mb-4 text-gray-800"><i class="fas fa-plus-circle text-purple-500"></i> Yeni Ürün Ekle</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                            <div class="md:col-span-3 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Ürün Adı</label><input type="text" id="new_p_name" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"></div>
+                            <div class="md:col-span-2 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Fiyat (TL)</label><input type="number" id="new_p_price" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"></div>
+                            <div class="md:col-span-2 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Ekmek Türü</label><select id="new_p_bread" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"><option value="14x14 cm">14x14 cm Ekmek</option><option value="11x11 cm">11x11 cm Ekmek</option><option value="Sandviç Ekmeği">Sandviç Ekmeği</option><option value="Standart">Standart / İçecek</option></select></div>
+                            <div class="md:col-span-2 w-full"><label class="block text-xs font-bold text-gray-500 mb-1">Stok</label><input type="number" id="new_p_stock" value="100" class="w-full border border-gray-300 p-2.5 rounded-xl text-sm outline-none"></div>
+                            <div class="md:col-span-3 w-full"><button onclick="saveProduct(0)" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-xl transition shadow-md">Ürünü Kaydet</button></div>
                         </div>
-                        <button onclick="saveProduct(${p.id}, '${p.bread_type || 'Standart'}')" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg text-xs">Güncelle</button>
-                    </div>`).join('') + `</div>`;
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">` + data.products.map(p => `
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition">
+                            <div class="w-full h-40 bg-gray-100 rounded-xl mb-4 overflow-hidden relative">
+                                <span class="absolute top-2 right-2 ${p.stock<=5?'bg-red-600':'bg-green-600'} text-white text-[10px] font-black px-2 py-1 rounded shadow-md">Stok: ${p.stock}</span>
+                                <img src="${p.img}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="space-y-3">
+                                <div><label class="text-xs font-bold text-gray-500">Ürün Adı:</label><input type="text" id="pname_${p.id}" value="${p.name}" class="w-full border border-gray-300 p-2 rounded-lg text-sm font-semibold outline-none"></div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="text-xs font-bold text-gray-500">Fiyat:</label><input type="number" id="pprice_${p.id}" value="${p.price}" class="w-full border p-2 rounded-lg text-sm font-bold text-red-600 outline-none"></div>
+                                    <div><label class="text-xs font-bold text-gray-500">Stok:</label><input type="number" id="pstock_${p.id}" value="${p.stock}" class="w-full border p-2 rounded-lg text-sm font-bold text-blue-600 outline-none"></div>
+                                </div>
+                                <div class="flex gap-2 pt-2 border-t border-gray-100">
+                                    <button onclick="saveProduct(${p.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg shadow transition">Güncelle</button>
+                                    <button onclick="if(confirm('Silinsin mi?')) apiAction({action:'delete_product', id:${p.id}})" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-lg shadow transition">Sil</button>
+                                </div>
+                            </div>
+                        </div>`).join('') + `</div></div>`;
             }
         }
 
+        // Dashboard Functions
         function addExpense() {
             const vendor_name = document.getElementById('exp_vendor').value;
             const description = document.getElementById('exp_desc').value;
             const quantity = parseFloat(document.getElementById('exp_qty').value || 1);
             const amount = parseFloat(document.getElementById('exp_amount').value || 0);
+            const is_paid = document.getElementById('exp_is_paid').checked ? 1 : 0;
             if (!vendor_name || !description || amount <= 0) return alert("Lütfen tüm alanları doldurun.");
-            apiAction({ action: 'add_expense', vendor_name, description, quantity, amount, is_paid: 1 });
+            apiAction({ action: 'add_expense', vendor_name, description, quantity, amount, is_paid });
         }
 
-        function saveProduct(id, bread_type) {
-            const name = document.getElementById('pname_' + id).value;
-            const price = parseFloat(document.getElementById('pprice_' + id).value || 0);
-            const stock = parseInt(document.getElementById('pstock_' + id).value || 0, 10);
-            apiAction({ action: 'save_product', id, name, price, stock, bread_type });
+        function updateQOPrice() {
+            const prod = document.getElementById('qo_product');
+            const drink = document.getElementById('qo_drink');
+            const qty = parseInt(document.getElementById('qo_qty').value || 1);
+            if(prod && drink) {
+                const bPrice = parseFloat(prod.options[prod.selectedIndex].getAttribute('data-price')) || 0;
+                const dPrice = parseFloat(drink.options[drink.selectedIndex].getAttribute('data-price')) || 0;
+                if(prod.value !== "Özel Sipariş" && prod.value !== "") {
+                    document.getElementById('qo_price').value = (bPrice + dPrice) * qty;
+                }
+            }
+        }
+
+        function addQuickOrder() {
+            const customer_name = document.getElementById('qo_name').value;
+            const phone = document.getElementById('qo_phone').value;
+            const address = document.getElementById('qo_address').value;
+            const product_name = document.getElementById('qo_product').value;
+            const quantity = document.getElementById('qo_qty').value;
+            const drink = document.getElementById('qo_drink').value;
+            const payment_method = document.getElementById('qo_payment').value;
+            const price = document.getElementById('qo_price').value;
+            const is_paid = document.getElementById('qo_is_paid').checked ? 1 : 0;
+            
+            if(!customer_name || !phone || !address || !product_name || !price) return alert("Eksik alanları doldurun.");
+            apiAction({action:'admin_place_order', customer_name, phone, address, product_name, quantity, drink, payment_method, price, is_paid});
+        }
+
+        // WhatsApp Functions
+        function selectWaPhone(phone) {
+            activeWaPhone = phone;
+            apiAction({action: 'mark_wa_read', wa_phone: phone});
+        }
+        function sendWaMsg() {
+            const input = document.getElementById('wa_msg_input');
+            const msg = input.value.trim();
+            if(!msg || !activeWaPhone) return;
+            apiAction({action: 'send_wa_reply', wa_phone: activeWaPhone, wa_message: msg});
+            input.value = '';
+        }
+
+        // Chat Log Functions
+        function showChatLog(id) {
+            const log = window.adminData.chatLogs.find(l => l.id === id);
+            if(log) {
+                document.getElementById('chat_modal_content').innerHTML = cleanChatLog(log.chat_data);
+                document.getElementById('chat_modal').classList.remove('hidden');
+            }
+        }
+
+        // Product Functions
+        function saveProduct(id) {
+            if (id === 0) {
+                const name = document.getElementById('new_p_name').value;
+                const price = parseFloat(document.getElementById('new_p_price').value || 0);
+                const stock = parseInt(document.getElementById('new_p_stock').value || 0, 10);
+                const bread_type = document.getElementById('new_p_bread').value;
+                if(!name || price<=0) return alert("İsim ve fiyat zorunlu");
+                apiAction({ action: 'save_product', name, price, stock, bread_type });
+            } else {
+                const name = document.getElementById('pname_' + id).value;
+                const price = parseFloat(document.getElementById('pprice_' + id).value || 0);
+                const stock = parseInt(document.getElementById('pstock_' + id).value || 0, 10);
+                apiAction({ action: 'save_product', id, name, price, stock });
+            }
+        }
+
+        // Autocomplete
+        function setupAutocomplete(inputId, dropdownId, dataList) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(dropdownId);
+            if(!input || !dropdown) return;
+
+            function render(list, filterText = "") {
+                dropdown.innerHTML = ''; 
+                if(list.length === 0) { dropdown.classList.add('hidden'); return; }
+                list.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'p-2.5 hover:bg-red-50 cursor-pointer text-xs font-semibold text-gray-700 border-b border-gray-100 transition';
+                    div.innerText = item;
+                    div.addEventListener('mousedown', (e) => { e.preventDefault(); input.value = item; dropdown.classList.add('hidden'); });
+                    dropdown.appendChild(div);
+                });
+                dropdown.classList.remove('hidden');
+            }
+
+            input.addEventListener('input', function() {
+                const val = this.value.toLocaleLowerCase('tr-TR');
+                render(val ? dataList.filter(s => s.toLocaleLowerCase('tr-TR').includes(val)) : dataList, val);
+            });
+            input.addEventListener('focus', function() {
+                const val = this.value.toLocaleLowerCase('tr-TR');
+                render(val ? dataList.filter(s => s.toLocaleLowerCase('tr-TR').includes(val)) : dataList, val);
+            });
+            input.addEventListener('blur', function() { setTimeout(() => { dropdown.classList.add('hidden'); }, 150); });
         }
 
         const notificationSound = new Audio('/zil.mp3');
@@ -284,8 +578,8 @@
                 notificationSound.pause();
                 notificationSound.currentTime = 0;
             }).catch(e => {});
-            this.innerHTML = '<i class="fas fa-check-circle"></i> <span>Ses Aktif</span>';
-            this.className = "flex-1 flex items-center justify-center gap-1 w-full bg-green-600 text-white text-[10px] md:text-xs font-bold px-2 py-2 rounded-lg transition";
+            this.innerHTML = '<i class="fas fa-check-circle"></i> <span class="hidden md:inline">Ses Aktif</span><span class="md:hidden">Aktif</span>';
+            this.className = "flex-1 flex items-center justify-center gap-1 md:gap-2 w-full bg-green-600 text-white text-[10px] md:text-xs font-bold px-2 md:px-3 py-2 md:py-2.5 rounded-lg transition shadow";
         });
 
         setInterval(() => {
@@ -295,6 +589,7 @@
                     if (d.new_orders > 0) {
                         if (soundEnabled) notificationSound.play().catch(e => {});
                         document.getElementById('new-order-alert').classList.remove('hidden');
+                        document.title = "(🔔 Yeni) " + document.title;
                     }
                 });
         }, 10000);
