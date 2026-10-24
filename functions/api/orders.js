@@ -91,13 +91,16 @@ export async function onRequestPost(context) {
                 .bind(breadNeeds[bType].need, bType).run();
         }
 
-        // WhatsApp Bildirimi
-        await sendWhatsAppTemplate(env, phone, "siparis_alindi", name, orderId);
-        await sendWhatsAppTemplate(env, env.ADMIN_PHONE, "admin_yeni_siparis", `WEB: ${name}`, orderId);
+        // WhatsApp Bildirimi (Değişken tanımsızsa kodun çökmesini engeller)
+        if (env.ADMIN_PHONE) {
+            await sendWhatsAppTemplate(env, phone, "siparis_alindi", name, orderId);
+            await sendWhatsAppTemplate(env, env.ADMIN_PHONE, "admin_yeni_siparis", `WEB: ${name}`, orderId);
+        }
 
         return jsonResponse({ success: true, order_id: orderId, total: subtotal });
 
     } catch (err) {
-        return jsonResponse({ success: false, error: err.message }, 500);
+        // Hatayı telefonda ekrana basarak asıl sorunu (örneğin tablo uyuşmazlığı) gösterir
+        return jsonResponse({ success: false, message: "HATA NEDENİ: " + (err.message || err.toString()) }, 200);
     }
 }
